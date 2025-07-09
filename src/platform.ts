@@ -7,41 +7,34 @@ import {
   Service,
 } from 'homebridge';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { HejhomeApi } from './hejhomeApi';
+import { HejhomeApiClient, HejhomeDevice } from './api/GoqualClient.js';
 import {
   IrAirconditionerAccessory,
   IrFanAccessory,
   IrLampAccessory,
-  IrAirPurifierAccessory,
   IrTvAccessory,
 } from './accessories';
-import { HejhomeDevice } from './hejhomeApi';
 import { IrStatelessSwitchAccessory } from './accessories/IrStatelessSwitchAccessory';
 
-export = (api: API): void => {
+export function registerPlatform(api: API): void {
   api.registerPlatform(PLUGIN_NAME, PLATFORM_NAME, HejhomeIRPlatform);
-};
+}
 
-class HejhomeIRPlatform implements DynamicPlatformPlugin {
+export class HejhomeIRPlatform implements DynamicPlatformPlugin {
   readonly accessories: PlatformAccessory[] = [];
-  private readonly apiClient: HejhomeApi;
+  private readonly apiClient: HejhomeApiClient;
 
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    this.apiClient = new HejhomeApi(
-      config.clientId,
-      config.clientSecret,
-      config.username,
-      config.password,
-    );
+    this.apiClient = new HejhomeApiClient(config.host);
 
     this.api.on('didFinishLaunching', async () => {
       try {
-        await this.apiClient.login();
-        const devices = await this.apiClient.getIrDevices();
+        await this.apiClient.login(config.username, config.password);
+        const devices = await this.apiClient.getIRDevices();
         await this.syncAccessories(devices);
       } catch (err) {
         this.log.error('Initialization failed:', err);

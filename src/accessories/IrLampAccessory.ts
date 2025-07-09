@@ -1,9 +1,16 @@
-import { CharacteristicValue } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { IrBaseAccessory } from './IrBaseAccessory.js';
+import { HejhomeIRPlatform } from '../platform.js';
+import { HejhomeDevice, HejhomeApiClient } from '../api/GoqualClient.js';
 
 export class IrLampAccessory extends IrBaseAccessory {
-  constructor(...args: ConstructorParameters<typeof IrBaseAccessory>) {
-    super(...args, 'Lightbulb');
+  constructor(
+    platform: HejhomeIRPlatform,
+    accessory: PlatformAccessory,
+    device: HejhomeDevice,
+    api: HejhomeApiClient,
+  ) {
+    super(platform, accessory, device, api, 'Lightbulb');
 
     const { Characteristic } = this.platform.api.hap;
 
@@ -13,7 +20,7 @@ export class IrLampAccessory extends IrBaseAccessory {
 
     this.service.getCharacteristic(Characteristic.Brightness)
       .setProps({ minValue: 0, maxValue: 100, minStep: 100 }) // 0 또는 100
-      .onSet(v => this.toggle(v as number > 0))
+      .onSet((v: CharacteristicValue) => this.toggle(v as number > 0))
       .onGet(() => 0);
   }
 

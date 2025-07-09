@@ -1,26 +1,33 @@
-import { CharacteristicValue } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { IrBaseAccessory } from './IrBaseAccessory.js';
+import { HejhomeIRPlatform } from '../platform.js';
+import { HejhomeDevice, HejhomeApiClient } from '../api/GoqualClient.js';
 
 export class IrFanAccessory extends IrBaseAccessory {
-  constructor(...args: ConstructorParameters<typeof IrBaseAccessory>) {
-    super(...args, 'Fan');
+  constructor(
+    platform: HejhomeIRPlatform,
+    accessory: PlatformAccessory,
+    device: HejhomeDevice,
+    api: HejhomeApiClient,
+  ) {
+    super(platform, accessory, device, api, 'Fan');
 
     const { Characteristic } = this.platform.api.hap;
 
     // 전원 (Active)
     this.service.getCharacteristic(Characteristic.Active)
-      .onSet(v => this.handlePower(v as number))
+      .onSet((v: CharacteristicValue) => this.handlePower(v as number))
       .onGet(() => 0);
 
     // 풍속 (RotationSpeed)
     this.service.getCharacteristic(Characteristic.RotationSpeed)
       .setProps({ minValue: 0, maxValue: 100, minStep: 1 })
-      .onSet(v => this.handleSpeed(v as number))
+      .onSet((v: CharacteristicValue) => this.handleSpeed(v as number))
       .onGet(() => 0);
 
     // 회전 (SwingMode)
     this.service.getCharacteristic(Characteristic.SwingMode)
-      .onSet(v => this.fire(v ? 'oscillate' : 'oscillate')) // 토글형 버튼
+      .onSet((v: CharacteristicValue) => this.fire(v ? 'oscillate' : 'oscillate')) // 토글형 버튼
       .onGet(() => 0);
   }
 
@@ -42,7 +49,7 @@ export class IrFanAccessory extends IrBaseAccessory {
     this.reset(this.platform.api.hap.Characteristic.RotationSpeed);
   }
 
-  private reset(char) {
+  private reset(char: any) {
     setTimeout(() => this.service.updateCharacteristic(char, 0), 500);
   }
 }

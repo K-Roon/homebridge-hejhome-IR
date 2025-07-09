@@ -35,7 +35,7 @@ export class HejhomeIRPlatform implements DynamicPlatformPlugin {
     this.Service = api.hap.Service;
     this.Characteristic = api.hap.Characteristic;
 
-    this.client = new HejhomeApiClient(this.config.host, this.config.token);
+    this.client = new HejhomeApiClient(this.config.host);
 
     // This is only required when using Custom Services and Characteristics not support by HomeKit
     this.CustomServices = new EveHomeKitTypes(this.api).Services;
@@ -47,8 +47,14 @@ export class HejhomeIRPlatform implements DynamicPlatformPlugin {
     // Dynamic Platform plugins should only register new accessories after this event was fired,
     // in order to ensure they weren't added to homebridge already. This event can also be used
     // to start discovery of new accessories.
-    this.api.on('didFinishLaunching', () => {
+    this.api.on('didFinishLaunching', async () => {
       log.debug('Executed didFinishLaunching callback');
+      try {
+        await this.client.login(this.config.username, this.config.password);
+      } catch (error) {
+        this.log.error('Failed to login:', error);
+        return;
+      }
       // run the method to discover / register your devices as accessories
       this.discoverDevices();
     });

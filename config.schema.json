@@ -18,10 +18,16 @@
         "required": true,
         "default": "http://localhost:8080"
       },
-      "token": {
-        "title": "Hejhome API Token",
+      "username": {
+        "title": "Hejhome Username",
         "type": "string",
         "required": true
+      },
+      "password": {
+        "title": "Hejhome Password",
+        "type": "string",
+        "required": true,
+        "format": "password"
       }
     }
   }

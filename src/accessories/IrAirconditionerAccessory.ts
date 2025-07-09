@@ -1,4 +1,4 @@
-import { CharacteristicValue, Service } from 'homebridge';
+import { CharacteristicValue } from 'homebridge';
 import { IrBaseAccessory } from './IrBaseAccessory';
 import { HejhomeIRPlatform } from '../platform.js';
 import { HejhomeDevice, HejhomeApiClient } from '../api/GoqualClient.js';

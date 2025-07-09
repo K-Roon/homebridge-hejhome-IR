@@ -4,12 +4,10 @@ import {
   Logger,
   PlatformAccessory,
   PlatformConfig,
-  Service,
 } from 'homebridge';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { HejhomeApiClient, HejhomeDevice } from './api/GoqualClient.js';
 import {
-  IrAirconditionerAccessory,
   IrFanAccessory,
   IrLampAccessory,
   IrTvAccessory,

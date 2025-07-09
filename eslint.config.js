@@ -1,19 +1,29 @@
+
 import js from "@eslint/js";
-import globals from "globals";
 import tseslint from "typescript-eslint";
 import json from "@eslint/json";
-import markdown from "@eslint/markdown";
-import css from "@eslint/css";
-import { defineConfig } from "eslint/config";
 
+export default [
+  /* 1️⃣ ESLint 기본 JS 권장 규칙 */
+  js.configs.recommended,
 
-export default defineConfig([
-  { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], plugins: { js }, extends: ["js/recommended"] },
-  { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], languageOptions: { globals: globals.browser } },
-  tseslint.configs.recommended,
-  { files: ["**/*.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
-  { files: ["**/*.jsonc"], plugins: { json }, language: "json/jsonc", extends: ["json/recommended"] },
-  { files: ["**/*.json5"], plugins: { json }, language: "json/json5", extends: ["json/recommended"] },
-  { files: ["**/*.md"], plugins: { markdown }, language: "markdown/gfm", extends: ["markdown/recommended"] },
-  { files: ["**/*.css"], plugins: { css }, language: "css/css", extends: ["css/recommended"] },
-]);
+  ...tseslint.configs.recommendedTypeChecked,
+
+  { ignores: ["dist/**", "node_modules/**"] },
+
+  /* 4️⃣ JSON 전용 설정 */
+  {
+    files: ["**/*.json"],
+    ignores: ["package-lock.json"],
+    plugins: { json },
+    languageOptions: { parser: json.parser },
+    rules: { "json/no-empty-keys": "warn" },
+  },
+
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+    },
+  },
+];

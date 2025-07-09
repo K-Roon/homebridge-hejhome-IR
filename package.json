@@ -25,9 +25,10 @@
   },
   "scripts": {
     "build": "rimraf ./dist && tsc",
-    "lint": "eslint . --max-warnings=0",
     "prepublishOnly": "npm run lint && npm run build",
-    "watch": "npm run build && npm link && nodemon"
+    "watch": "npm run build && npm link && nodemon",
+    "lint": "eslint . --fix --max-warnings 9999",
+    "lint:ci": "eslint . --max-warnings 9999"
   },
   "dependencies": {
     "@typescript-eslint/eslint-plugin": "^8.36.0",

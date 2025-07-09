@@ -1,111 +1,89 @@
-import type { API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
+import {
+  API,
+  DynamicPlatformPlugin,
+  Logger,
+  PlatformAccessory,
+  PlatformConfig,
+  Service,
+} from 'homebridge';
+import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
+import { HejhomeApi } from './hejhomeApi';
+import {
+  IrAirconditionerAccessory,
+  IrFanAccessory,
+  IrLampAccessory,
+  IrAirPurifierAccessory,
+  IrTvAccessory,
+} from './accessories';
+import { HejhomeDevice } from './hejhomeApi';
+import { IrStatelessSwitchAccessory } from './accessories/IrStatelessSwitchAccessory';
 
-import { HejhomeIRAccessory } from './platformAccessory.js';
-import { HejhomeApiClient, HejhomeDevice } from './api/hejhome.js';
-import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
+export = (api: API): void => {
+  api.registerPlatform(PLUGIN_NAME, PLATFORM_NAME, HejhomeIRPlatform);
+};
 
-// This is only required when using Custom Services and Characteristics not support by HomeKit
-import { EveHomeKitTypes } from 'homebridge-lib/EveHomeKitTypes';
-
-/**
- * HomebridgePlatform
- * This class is the main constructor for your plugin, this is where you should
- * parse the user config and discover/register accessories with Homebridge.
- */
-export class HejhomeIRPlatform implements DynamicPlatformPlugin {
-  public readonly Service: typeof Service;
-  public readonly Characteristic: typeof Characteristic;
-
-  // this is used to track restored cached accessories
-  public readonly accessories: Map<string, PlatformAccessory> = new Map();
-  public readonly discoveredCacheUUIDs: string[] = [];
-
-  // This is only required when using Custom Services and Characteristics not support by HomeKit
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public readonly CustomServices: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public readonly CustomCharacteristics: any;
-  private readonly client: HejhomeApiClient;
+class HejhomeIRPlatform implements DynamicPlatformPlugin {
+  readonly accessories: PlatformAccessory[] = [];
+  private readonly apiClient: HejhomeApi;
 
   constructor(
-    public readonly log: Logging,
+    public readonly log: Logger,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    this.Service = api.hap.Service;
-    this.Characteristic = api.hap.Characteristic;
+    this.apiClient = new HejhomeApi(
+      config.clientId,
+      config.clientSecret,
+      config.username,
+      config.password,
+    );
 
-    this.client = new HejhomeApiClient(this.config.host);
-
-    // This is only required when using Custom Services and Characteristics not support by HomeKit
-    this.CustomServices = new EveHomeKitTypes(this.api).Services;
-    this.CustomCharacteristics = new EveHomeKitTypes(this.api).Characteristics;
-
-    this.log.debug('Finished initializing platform:', this.config.name);
-
-    // When this event is fired it means Homebridge has restored all cached accessories from disk.
-    // Dynamic Platform plugins should only register new accessories after this event was fired,
-    // in order to ensure they weren't added to homebridge already. This event can also be used
-    // to start discovery of new accessories.
     this.api.on('didFinishLaunching', async () => {
-      log.debug('Executed didFinishLaunching callback');
       try {
-        await this.client.login(this.config.username, this.config.password);
-      } catch (error) {
-        this.log.error('Failed to login:', error);
-        return;
+        await this.apiClient.login();
+        const devices = await this.apiClient.getIrDevices();
+        await this.syncAccessories(devices);
+      } catch (err) {
+        this.log.error('Initialization failed:', err);
       }
-      // run the method to discover / register your devices as accessories
-      this.discoverDevices();
     });
   }
 
-  /**
-   * This function is invoked when homebridge restores cached accessories from disk at startup.
-   * It should be used to set up event handlers for characteristics and update respective values.
-   */
-  configureAccessory(accessory: PlatformAccessory) {
-    this.log.info('Loading accessory from cache:', accessory.displayName);
-
-    // add the restored accessory to the accessories cache, so we can track if it has already been registered
-    this.accessories.set(accessory.UUID, accessory);
+  /** Homebridge 재기동 시 기존 액세서리 복원 */
+  configureAccessory(accessory: PlatformAccessory): void {
+    this.accessories.push(accessory);
   }
 
-  /**
-   * This is an example method showing how to register discovered accessories.
-   * Accessories must only be registered once, previously created accessories
-   * must not be registered again to prevent "duplicate UUID" errors.
-   */
-  async discoverDevices() {
-    try {
-      const devices: HejhomeDevice[] = await this.client.getIRDevices();
+  /** 새 디바이스와 비교해 추가/제거/업데이트 */
+  private async syncAccessories(devices: HejhomeDevice[]): Promise<void> {
+    for (const device of devices) {
+      const uuid = this.api.hap.uuid.generate(device.id);
+      let accessory = this.accessories.find(a => a.UUID === uuid);
 
-      for (const device of devices) {
-        const uuid = this.api.hap.uuid.generate(device.id);
-        const existingAccessory = this.accessories.get(uuid);
-
-        if (existingAccessory) {
-          this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
-          new HejhomeIRAccessory(this, existingAccessory);
-        } else {
-          this.log.info('Adding new accessory:', device.name);
-          const accessory = new this.api.platformAccessory(device.name, uuid);
-          accessory.context.device = device;
-          new HejhomeIRAccessory(this, accessory);
-          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-        }
-
-        this.discoveredCacheUUIDs.push(uuid);
+      if (!accessory) {
+        accessory = new this.api.platformAccessory(device.name, uuid);
+        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        this.accessories.push(accessory);
       }
 
-      for (const [uuid, accessory] of this.accessories) {
-        if (!this.discoveredCacheUUIDs.includes(uuid)) {
-          this.log.info('Removing existing accessory from cache:', accessory.displayName);
-          this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-        }
+      // 장치 타입별로 액세서리 클래스 매핑
+      switch (device.deviceType) {
+        case 'IrAirconditioner':
+        case 'IrAirpurifer':
+          new IrStatelessSwitchAccessory(this, accessory, device, this.apiClient, 'power');
+          break;
+        case 'IrFan':
+          new IrFanAccessory(this, accessory, device, this.apiClient);
+          break;
+        case 'IrLamp':
+          new IrLampAccessory(this, accessory, device, this.apiClient);
+          break;
+        case 'IrTv':
+          new IrTvAccessory(this, accessory, device, this.apiClient);
+          break;
+        default:
+          this.log.warn('Unsupported device type:', device.deviceType);
       }
-    } catch (error) {
-      this.log.error('Failed to discover devices:', error);
     }
   }
 }

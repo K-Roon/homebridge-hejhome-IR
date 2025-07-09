@@ -1,9 +1,9 @@
 /**
- * This is the name of the platform that users will use to register the plugin in the Homebridge config.json
+ * Homebridge register-platform 이름
  */
 export const PLATFORM_NAME = 'HejhomeIR';
 
 /**
- * This must match the name of your plugin as defined the package.json `name` property
+ * npm package 이름 (package.json name 필드와 동일)
  */
 export const PLUGIN_NAME = '@K-Roon/homebridge-hejhome-IR';

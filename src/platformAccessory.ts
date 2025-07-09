@@ -1,7 +1,7 @@
 import type { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 
 import type { HejhomeIRPlatform } from './platform.js';
-import type { HejhomeDevice } from './api/hejhome.js';
+import type { HejhomeDevice } from './api/GoqualClient.js';
 
 /**
  * Platform Accessory

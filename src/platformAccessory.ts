@@ -1,6 +1,7 @@
 import type { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 
 import type { HejhomeIRPlatform } from './platform.js';
+import type { HejhomeDevice } from './api/hejhome.js';
 
 /**
  * Platform Accessory
@@ -9,12 +10,7 @@ import type { HejhomeIRPlatform } from './platform.js';
  */
 export class HejhomeIRAccessory {
   private service: Service;
-
-  /**
-   * These are just used to create a working example
-   * You should implement your own code to track the state of your accessory
-   */
-  private exampleStates = {
+  private state = {
     On: false,
     Brightness: 100,
   };
@@ -42,7 +38,8 @@ export class HejhomeIRAccessory {
 
     // set the service name, this is what is displayed as the default name on the Home app
     // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
-    this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.exampleDisplayName);
+    const device = accessory.context.device as HejhomeDevice;
+    this.service.setCharacteristic(this.platform.Characteristic.Name, device.name);
 
     // each service must implement at-minimum the "required characteristics" for the given service type
     // see https://developers.homebridge.io/#/service/Lightbulb
@@ -67,34 +64,6 @@ export class HejhomeIRAccessory {
      * can use the same subtype id.)
      */
 
-    // Example: add two "motion sensor" services to the accessory
-    const motionSensorOneService = this.accessory.getService('Motion Sensor One Name')
-      || this.accessory.addService(this.platform.Service.MotionSensor, 'Motion Sensor One Name', 'YourUniqueIdentifier-1');
-
-    const motionSensorTwoService = this.accessory.getService('Motion Sensor Two Name')
-      || this.accessory.addService(this.platform.Service.MotionSensor, 'Motion Sensor Two Name', 'YourUniqueIdentifier-2');
-
-    /**
-     * Updating characteristics values asynchronously.
-     *
-     * Example showing how to update the state of a Characteristic asynchronously instead
-     * of using the `on('get')` handlers.
-     * Here we change update the motion sensor trigger states on and off every 10 seconds
-     * the `updateCharacteristic` method.
-     *
-     */
-    let motionDetected = false;
-    setInterval(() => {
-      // EXAMPLE - inverse the trigger
-      motionDetected = !motionDetected;
-
-      // push the new value to HomeKit
-      motionSensorOneService.updateCharacteristic(this.platform.Characteristic.MotionDetected, motionDetected);
-      motionSensorTwoService.updateCharacteristic(this.platform.Characteristic.MotionDetected, !motionDetected);
-
-      this.platform.log.debug('Triggering motionSensorOneService:', motionDetected);
-      this.platform.log.debug('Triggering motionSensorTwoService:', !motionDetected);
-    }, 10000);
   }
 
   /**
@@ -102,9 +71,13 @@ export class HejhomeIRAccessory {
    * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
    */
   async setOn(value: CharacteristicValue) {
-    // implement your own code to turn your device on/off
-    this.exampleStates.On = value as boolean;
-
+    this.state.On = value as boolean;
+    const device = this.accessory.context.device as HejhomeDevice;
+    try {
+      await this.platform.client.sendIRCommand(device.id, value ? 'on' : 'off');
+    } catch (error) {
+      this.platform.log.error('Failed to set power state:', error);
+    }
     this.platform.log.debug('Set Characteristic On ->', value);
   }
 
@@ -125,7 +98,7 @@ export class HejhomeIRAccessory {
    */
   async getOn(): Promise<CharacteristicValue> {
     // implement your own code to check if the device is on
-    const isOn = this.exampleStates.On;
+    const isOn = this.state.On;
 
     this.platform.log.debug('Get Characteristic On ->', isOn);
 
@@ -140,9 +113,13 @@ export class HejhomeIRAccessory {
    * These are sent when the user changes the state of an accessory, for example, changing the Brightness
    */
   async setBrightness(value: CharacteristicValue) {
-    // implement your own code to set the brightness
-    this.exampleStates.Brightness = value as number;
-
+    this.state.Brightness = value as number;
+    const device = this.accessory.context.device as HejhomeDevice;
+    try {
+      await this.platform.client.sendIRCommand(device.id, `brightness:${value}`);
+    } catch (error) {
+      this.platform.log.error('Failed to set brightness:', error);
+    }
     this.platform.log.debug('Set Characteristic Brightness -> ', value);
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "homebridge-hejhome-ir",
+  "name": "@K-Roon/homebridge-hejhome-IR",
   "displayName": "Hejhome IR",
   "type": "module",
   "version": "0.0.1",

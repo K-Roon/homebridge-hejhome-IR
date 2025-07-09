@@ -1,4 +1,4 @@
-# homebridge-hejhome-IR
+# @K-Roon/homebridge-hejhome-IR
 
 현재 버전: **0.0.1** (Homebridge 플러그인 등록 완료)
 
@@ -18,7 +18,7 @@
 3. **Hejhome 플러그인 설치**
    - NPM을 사용해 이 저장소의 플러그인을 전역으로 설치합니다.
    ```bash
-   sudo npm install -g homebridge-hejhome-ir
+   sudo npm install -g @K-Roon/homebridge-hejhome-IR
    ```
 
 4. **Homebridge 설정**

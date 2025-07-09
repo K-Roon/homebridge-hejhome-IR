@@ -11,6 +11,17 @@
         "type": "string",
         "required": true,
         "default": "Hejhome IR"
+      },
+      "host": {
+        "title": "Hejhome API Host",
+        "type": "string",
+        "required": true,
+        "default": "http://localhost:8080"
+      },
+      "token": {
+        "title": "Hejhome API Token",
+        "type": "string",
+        "required": true
       }
     }
   }

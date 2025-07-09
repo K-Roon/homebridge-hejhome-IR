@@ -29,7 +29,9 @@
      "platforms": [
        {
          "platform": "HejhomeIR",
-         "name": "Hejhome IR"
+         "name": "Hejhome IR",
+         "host": "http://localhost:8080",
+         "token": "YOUR_API_TOKEN"
        }
      ]
    }

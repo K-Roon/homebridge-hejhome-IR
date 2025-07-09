@@ -1,12 +1,17 @@
-import { CharacteristicValue } from 'homebridge';
+import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { IrBaseAccessory } from './IrBaseAccessory.js';
+import { HejhomeIRPlatform } from '../platform.js';
+import { HejhomeDevice, HejhomeApiClient } from '../api/GoqualClient.js';
 
 export class IrStatelessSwitchAccessory extends IrBaseAccessory {
   constructor(
-    ...args: ConstructorParameters<typeof IrBaseAccessory>,
+    platform: HejhomeIRPlatform,
+    accessory: PlatformAccessory,
+    device: HejhomeDevice,
+    api: HejhomeApiClient,
     private readonly irCommand: string,
   ) {
-    super(...args, 'Switch');
+    super(platform, accessory, device, api, 'Switch');
     const { Characteristic } = this.platform.api.hap;
 
     this.service.getCharacteristic(Characteristic.On)
@@ -23,5 +28,4 @@ export class IrStatelessSwitchAccessory extends IrBaseAccessory {
           this.platform.api.hap.Characteristic.On, false);
       }, 500);
     }
-  }
-}
+  }}

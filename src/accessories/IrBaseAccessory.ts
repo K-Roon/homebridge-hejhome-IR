@@ -1,6 +1,6 @@
 import { Logger, PlatformAccessory, Service } from 'homebridge';
 import { HejhomeIRPlatform } from '../platform.js';
-import { HejhomeDevice, HejhomeApi } from '../hejhomeApi.js';
+import { HejhomeDevice, HejhomeApiClient } from '../api/GoqualClient.js';
 
 export abstract class IrBaseAccessory {
   protected readonly log: Logger;
@@ -10,7 +10,7 @@ export abstract class IrBaseAccessory {
     protected readonly platform: HejhomeIRPlatform,
     protected readonly accessory: PlatformAccessory,
     protected readonly device: HejhomeDevice,
-    protected readonly api: HejhomeApi,
+    protected readonly api: HejhomeApiClient,
     serviceType: string,
   ) {
     this.log = platform.log;
@@ -21,7 +21,7 @@ export abstract class IrBaseAccessory {
 
   protected async fire(cmd: string): Promise<void> {
     try {
-      await this.api.sendIr(this.device.id, cmd);
+      await this.api.sendIRCommand(this.device.id, cmd);
       this.log.debug(`${this.device.name} → ${cmd}`);
     } catch (e) {
       this.log.error('IR 전송 실패:', e);

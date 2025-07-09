@@ -1,6 +1,6 @@
 # @K-Roon/homebridge-hejhome-IR
 
-현재 버전: **0.0.1** (Homebridge 플러그인 등록 완료)
+현재 버전: **0.0.2** (Homebridge 플러그인 등록 완료)
 
 한국어가 지원되는 Homebridge IR 서비스입니다. 아래 단계에 따라 Homebridge와 헤이홈(Hejhome)을 시작할 수 있는 기본 환경을 구축할 수 있습니다.
 

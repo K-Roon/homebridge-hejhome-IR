@@ -1,19 +1,19 @@
 {
-  "name": "homebridge-plugin-name",
-  "displayName": "Plugin Name",
+  "name": "homebridge-hejhome-ir",
+  "displayName": "Hejhome IR",
   "type": "module",
-  "version": "1.0.0",
-  "private": true,
-  "description": "A short description about what your plugin does.",
-  "author": "Your Name",
+  "version": "0.0.1",
+  "private": false,
+  "description": "Homebridge plugin for Hejhome IR devices.",
+  "author": "Hejhome Team",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/USERNAME/GITHUB_PROJECT_NAME#readme",
+  "homepage": "https://github.com/hejhome/homebridge-hejhome-ir#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME.git"
+    "url": "https://github.com/hejhome/homebridge-hejhome-ir.git"
   },
   "bugs": {
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME/issues"
+    "url": "https://github.com/hejhome/homebridge-hejhome-ir/issues"
   },
   "keywords": [
     "homebridge-plugin"

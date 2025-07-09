@@ -6,4 +6,4 @@ export const PLATFORM_NAME = 'HejhomeIR';
 /**
  * This must match the name of your plugin as defined the package.json `name` property
  */
-export const PLUGIN_NAME = 'homebridge-hejhome-ir';
+export const PLUGIN_NAME = '@K-Roon/homebridge-hejhome-IR';

@@ -16,7 +16,13 @@
     "url": "https://github.com/K-Roon/homebridge-hejhome-ir/issues"
   },
   "keywords": [
-    "homebridge-plugin"
+    "homebridge-plugin",
+    "hejhome",
+    "hub",
+    "IR",
+    "Remote Controller",
+    "헤이홈",
+    "한국어"
   ],
   "main": "dist/index.js",
   "engines": {

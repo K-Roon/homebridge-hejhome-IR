@@ -5,6 +5,14 @@ export interface HejhomeDevice {
   // Additional properties may be provided by Hejhome
 }
 
+export const SUPPORTED_DEVICE_TYPES = [
+  'IrAirconditioner',
+  'IrLamp',
+  'IrFan',
+  'IrAirpurifier',
+  'IrTv',
+] as const;
+
 export class HejhomeApiClient {
   private token = '';
 
@@ -50,7 +58,7 @@ export class HejhomeApiClient {
 
   async getIRDevices(): Promise<HejhomeDevice[]> {
     const devices = await this.getDevices();
-    return devices.filter(d => ['ir_air_conditioner', 'ir_fan', 'ir_lamp', 'ir_air_purifier', 'ir_tv'].includes(d.deviceType));
+    return devices.filter(d => SUPPORTED_DEVICE_TYPES.includes(d.deviceType as typeof SUPPORTED_DEVICE_TYPES[number]));
   }
 
   async sendIRCommand(deviceId: string, command: string): Promise<void> {

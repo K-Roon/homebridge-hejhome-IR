@@ -28,4 +28,5 @@ export class IrStatelessSwitchAccessory extends IrBaseAccessory {
           this.platform.api.hap.Characteristic.On, false);
       }, 500);
     }
-  }}
+  }
+}

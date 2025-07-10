@@ -5,14 +5,14 @@ import {
   PlatformAccessory,
   PlatformConfig,
 } from 'homebridge';
-import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
+import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 import { HejhomeApiClient, HejhomeDevice } from './api/GoqualClient.js';
 import {
   IrFanAccessory,
   IrLampAccessory,
   IrTvAccessory,
-} from './accessories';
-import { IrStatelessSwitchAccessory } from './accessories/IrStatelessSwitchAccessory';
+} from './accessories/index.js';
+import { IrStatelessSwitchAccessory } from './accessories/IrStatelessSwitchAccessory.js';
 
 export function registerPlatform(api: API): void {
   api.registerPlatform(PLUGIN_NAME, PLATFORM_NAME, HejhomeIRPlatform);
@@ -33,7 +33,10 @@ export class HejhomeIRPlatform implements DynamicPlatformPlugin {
       try {
         await this.apiClient.login(config.username, config.password);
         const devices = await this.apiClient.getIRDevices();
-        await this.syncAccessories(devices);
+        const filtered = Array.isArray(config.deviceNames) && config.deviceNames.length
+          ? devices.filter(d => config.deviceNames.includes(d.name))
+          : devices;
+        await this.syncAccessories(filtered);
       } catch (err) {
         this.log.error('Initialization failed:', err);
       }

@@ -33,7 +33,7 @@ export class IrFanAccessory extends IrBaseAccessory {
 
   private async handlePower(value: number) {
     await this.fire('power');              // 켬/끔 토글
-    this.reset(Characteristic.Active);
+    this.reset(this.platform.api.hap.Characteristic.Active);
   }
 
   private async handleSpeed(percent: number) {
@@ -49,7 +49,7 @@ export class IrFanAccessory extends IrBaseAccessory {
     this.reset(this.platform.api.hap.Characteristic.RotationSpeed);
   }
 
-  private reset(char: any) {
+  private reset(char: typeof this.platform.api.hap.Characteristic.Active | typeof this.platform.api.hap.Characteristic.RotationSpeed) {
     setTimeout(() => this.service.updateCharacteristic(char, 0), 500);
   }
 }

@@ -1,5 +1,5 @@
 import { CharacteristicValue } from 'homebridge';
-import { IrBaseAccessory } from './IrBaseAccessory';
+import { IrBaseAccessory } from './IrBaseAccessory.js';
 import { HejhomeIRPlatform } from '../platform.js';
 import { HejhomeDevice, HejhomeApiClient } from '../api/GoqualClient.js';
 import type { PlatformAccessory } from 'homebridge';

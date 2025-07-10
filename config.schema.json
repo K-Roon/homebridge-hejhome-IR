@@ -28,6 +28,13 @@
         "type": "string",
         "required": true,
         "format": "password"
+      },
+      "deviceNames": {
+        "title": "Device Names",
+        "type": "array",
+        "required": true,
+        "items": { "type": "string" },
+        "description": "IR device names to control"
       }
     }
   }

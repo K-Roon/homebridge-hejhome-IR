@@ -13,6 +13,7 @@
 - IR TV
 
 플러그인은 Homebridge UI에서 ID와 비밀번호를 입력할 수 있는 간단한 로그인 화면을 제공합니다.
+또한 제어하려는 IR 기기 이름을 배열로 입력하면 해당 이름과 일치하는 장치만 Homebridge에 추가됩니다.
 
 ## 기본 환경 준비
 
@@ -42,11 +43,12 @@
          "name": "Hejhome IR",
          "host": "http://localhost:8080",
          "username": "YOUR_ID",
-         "password": "YOUR_PASSWORD"
-       }
-     ]
-   }
-   ```
+          "password": "YOUR_PASSWORD",
+          "deviceNames": ["TARGET_DEVICE_1", "TARGET_DEVICE_2"]
+      }
+    ]
+  }
+  ```
 
 5. **Homebridge 실행**
    ```bash

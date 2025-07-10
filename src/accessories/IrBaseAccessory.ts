@@ -16,7 +16,7 @@ export abstract class IrBaseAccessory {
     this.log = platform.log;
     const { Service } = platform.api.hap;
     this.service = accessory.getService(serviceType)
-      ?? accessory.addService(Service[serviceType], device.name);
+      ?? accessory.addService((Service as any)[serviceType], device.name);
   }
 
   protected async fire(cmd: string): Promise<void> {

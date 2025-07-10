@@ -7,34 +7,34 @@
     "type": "object",
     "properties": {
       "name": {
-        "title": "Name",
+        "title": "이름",
         "type": "string",
         "required": true,
         "default": "Hejhome IR"
       },
       "host": {
-        "title": "Hejhome API Host",
+        "title": "Hejhome API 호스트",
         "type": "string",
         "required": true,
         "default": "http://localhost:8080"
       },
       "username": {
-        "title": "Hejhome Username",
+        "title": "Hejhome 사용자 이름",
         "type": "string",
         "required": true
       },
       "password": {
-        "title": "Hejhome Password",
+        "title": "Hejhome 비밀번호",
         "type": "string",
         "required": true,
         "format": "password"
       },
       "deviceNames": {
-        "title": "Device Names",
+        "title": "제어할 기기 이름",
         "type": "array",
         "required": true,
         "items": { "type": "string" },
-        "description": "IR device names to control"
+        "description": "제어하려는 IR 기기 이름 목록"
       }
     }
   }

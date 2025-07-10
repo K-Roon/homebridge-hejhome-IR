@@ -6,7 +6,9 @@ import {
   PlatformConfig,
 } from 'homebridge';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
-import { HejhomeApiClient, HejhomeDevice } from './api/GoqualClient.js';
+import { HejhomeApiClient, HejhomeDevice, SUPPORTED_DEVICE_TYPES } from './api/GoqualClient.js';
+
+const SUPPORTED_TYPES = new Set(SUPPORTED_DEVICE_TYPES);
 import {
   IrFanAccessory,
   IrLampAccessory,
@@ -33,9 +35,12 @@ export class HejhomeIRPlatform implements DynamicPlatformPlugin {
       try {
         await this.apiClient.login(config.username, config.password);
         const devices = await this.apiClient.getIRDevices();
+        const supported = devices.filter(d =>
+          SUPPORTED_TYPES.has(d.deviceType as typeof SUPPORTED_DEVICE_TYPES[number])
+        );
         const filtered = Array.isArray(config.deviceNames) && config.deviceNames.length
-          ? devices.filter(d => config.deviceNames.includes(d.name))
-          : devices;
+          ? supported.filter(d => config.deviceNames.includes(d.name))
+          : supported;
         await this.syncAccessories(filtered);
       } catch (err) {
         this.log.error('Initialization failed:', err);
@@ -63,7 +68,7 @@ export class HejhomeIRPlatform implements DynamicPlatformPlugin {
       // 장치 타입별로 액세서리 클래스 매핑
       switch (device.deviceType) {
         case 'IrAirconditioner':
-        case 'IrAirpurifer':
+        case 'IrAirpurifier':
           new IrStatelessSwitchAccessory(this, accessory, device, this.apiClient, 'power');
           break;
         case 'IrFan':

@@ -1,11 +1,11 @@
 {
-  "name": "homebridge-hejhome-ir",
+  "name": "@k-roon/homebridge-hejhome-ir",
   "displayName": "Hejhome IR",
   "type": "module",
   "version": "0.0.3",
   "private": false,
   "description": "Homebridge plugin for Hejhome IR devices.",
-  "author": "Hejhome Team",
+  "author": "K-Roon",
   "license": "Apache-2.0",
   "homepage": "https://github.com/hejhome/homebridge-hejhome-ir#readme",
   "repository": {

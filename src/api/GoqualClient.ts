@@ -18,10 +18,8 @@ export class HejhomeApiClient {
 
   constructor(private readonly host: string) {}
 
-  // TODO: Hardcode the Hejhome API client ID here
-  private static readonly CLIENT_ID = '';
-  // TODO: Hardcode the Hejhome API client secret here
-  private static readonly CLIENT_SECRET = '';
+  private static readonly CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7';
+  private static readonly CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12';
 
   async login(username: string, password: string): Promise<void> {
     const res = await fetch(`${this.host}/api/login`, {

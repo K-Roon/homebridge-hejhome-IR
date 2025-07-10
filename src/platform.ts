@@ -35,12 +35,10 @@ export class HejhomeIRPlatform implements DynamicPlatformPlugin {
     const userId = config.username;
     const userPassword = config.password;
 
-    const API_CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7';
-    const API_CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12';
 
     this.api.on('didFinishLaunching', async () => {
       try {
-        await this.apiClient.getToken(API_CLIENT_ID, API_CLIENT_SECRET, userId, userPassword);
+        await this.apiClient.getTokenFromSquare(this.log, userId, userPassword);
         await this.apiClient.login(userId, userPassword);
         const devices = await this.apiClient.getIRDevices();
         const supported = devices.filter(d =>

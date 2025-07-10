@@ -35,10 +35,8 @@ export class HejhomeIRPlatform implements DynamicPlatformPlugin {
     const userId = config.username;
     const userPassword = config.password;
 
-    // TODO: Hardcode your Hejhome API client ID here
-    const API_CLIENT_ID = '';
-    // TODO: Hardcode your Hejhome API client secret here
-    const API_CLIENT_SECRET = '';
+    const API_CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7';
+    const API_CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12';
 
     this.api.on('didFinishLaunching', async () => {
       try {

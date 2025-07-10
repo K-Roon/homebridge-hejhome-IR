@@ -7,13 +7,13 @@
   "description": "Homebridge plugin for Hejhome IR devices.",
   "author": "K-Roon",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/hejhome/homebridge-hejhome-ir#readme",
+  "homepage": "https://github.com/K-Roon/homebridge-hejhome-ir#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hejhome/homebridge-hejhome-ir.git"
+    "url": "https://github.com/K-Roon/homebridge-hejhome-ir.git"
   },
   "bugs": {
-    "url": "https://github.com/hejhome/homebridge-hejhome-ir/issues"
+    "url": "https://github.com/K-Roon/homebridge-hejhome-ir/issues"
   },
   "keywords": [
     "homebridge-plugin"

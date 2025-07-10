@@ -13,6 +13,7 @@
 - IR TV
 
 플러그인은 Homebridge UI에서 ID와 비밀번호를 입력할 수 있는 간단한 로그인 화면을 제공합니다.
+로그인 방식은 [homebridge-hejhome](https://github.com/chazepps/homebridge-hejhome) 프로젝트의 API 접근 예제를 참고했습니다.
 또한 제어하려는 IR 기기 이름을 배열로 입력하면 해당 이름과 일치하는 장치만 Homebridge에 추가됩니다.
 
 ## 기본 환경 준비

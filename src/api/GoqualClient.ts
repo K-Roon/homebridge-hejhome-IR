@@ -1,8 +1,39 @@
+import type { Logger } from 'homebridge';
+import { obtainSquareToken } from './squareToken.js';
+
 export interface HejhomeDevice {
   id: string;
   name: string;
   deviceType: string;
   // Additional properties may be provided by Hejhome
+}
+
+export interface HejDeviceState {
+  power?: boolean;
+  lightMode?: 'WHITE' | 'COLOR' | 'SCENE';
+  hsvColor?: {
+    hue: number;
+    saturation: number;
+    brightness: number;
+  };
+  brightness?: number;
+  sceneValues?: string;
+  power1?: boolean;
+  power2?: boolean;
+  battery?: number;
+}
+
+export interface Member {
+  homeName: string;
+  admin: boolean;
+  name: string;
+  uid: string;
+  homeId: string | null;
+  memberAccount: string;
+}
+
+export interface MemberList {
+  member: Member[];
 }
 
 export const SUPPORTED_DEVICE_TYPES = [
@@ -62,12 +93,41 @@ export class HejhomeApiClient {
     this.token = data.access_token;
   }
 
-  async getUser(): Promise<unknown> {
-    const res = await this.request('/api/user');
+  async getTokenFromSquare(log: Logger, email: string, password: string): Promise<void> {
+    const token = await obtainSquareToken(log, email, password);
+    if (!token) {
+      throw new Error('Failed to retrieve token from Hej Square');
+    }
+    this.token = token;
+  }
+
+  async getUser(): Promise<MemberList> {
+    const res = await this.request('/dashboard/config/user');
     if (!res.ok) {
       throw new Error(`Failed to fetch user: ${res.status}`);
     }
-    return await res.json();
+    return await res.json() as MemberList;
+  }
+
+  async getDevicesState(familyId: number, roomId?: number): Promise<HejhomeDevice[]> {
+    const path = roomId
+      ? `/dashboard/${familyId}/room/${roomId}/devices-state?scope=shop`
+      : `/dashboard/${familyId}/devices-state?scope=shop`;
+    const res = await this.request(path);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch devices state: ${res.status}`);
+    }
+    return await res.json() as HejhomeDevice[];
+  }
+
+  async controlDevice(deviceId: string, body: { requirments: HejDeviceState }): Promise<void> {
+    const res = await this.request(`/dashboard/control/${deviceId}`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to control device: ${res.status}`);
+    }
   }
 
   private async request(path: string, options: RequestInit = {}): Promise<Response> {

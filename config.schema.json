@@ -27,7 +27,10 @@
         "title": "Hejhome 비밀번호",
         "type": "string",
         "required": true,
-        "format": "password"
+        "format": "password",
+        "x-schema-form": {
+          "type": "password"
+        }
       },
       "deviceNames": {
         "title": "제어할 기기 이름",

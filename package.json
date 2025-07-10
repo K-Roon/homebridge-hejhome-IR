@@ -2,7 +2,7 @@
   "name": "@k-roon/homebridge-hejhome-ir",
   "displayName": "Hejhome IR",
   "type": "module",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "private": false,
   "description": "Homebridge plugin for Hejhome IR devices.",
   "author": "K-Roon",

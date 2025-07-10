@@ -30,14 +30,18 @@ class SquareOAuthClient {
     url.searchParams.set('redirect_uri', 'https://square.hej.so/list');
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('scope', 'shop');
+    url.searchParams.set('vendor', 'shop');
 
     const res = await fetch(url.toString(), {
       headers: { cookie },
       redirect: 'manual',
     });
-
     const location = res.headers.get('location');
-    return location ? location.match(/code=([^&]+)/)?.[1] ?? null : null;
+    if (!location) {
+      this.log.error(`Authorize request failed with status ${res.status}`);
+      return null;
+    }
+    return location.match(/code=([^&]+)/)?.[1] ?? null;
   }
 
   private async exchangeToken(code: string): Promise<string> {

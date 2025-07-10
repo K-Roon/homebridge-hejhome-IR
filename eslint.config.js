@@ -1,29 +1,47 @@
-
+// eslint.config.js
 import js from "@eslint/js";
-import tseslint from "typescript-eslint";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
+import parser from "@typescript-eslint/parser";
 import json from "@eslint/json";
+import { defineConfig, globalIgnores } from "eslint/config";
 
-export default [
-  /* 1️⃣ ESLint 기본 JS 권장 규칙 */
+export default defineConfig([
+  globalIgnores([
+    "dist/**",
+    "node_modules/**",
+    "package.json",
+    "package-lock.json",
+    "config.schema.json",
+    "nodemon.json"
+  ]),
+
   js.configs.recommended,
 
-  ...tseslint.configs.recommendedTypeChecked,
-
-  { ignores: ["dist/**", "node_modules/**"] },
-
-  /* 4️⃣ JSON 전용 설정 */
   {
-    files: ["**/*.json"],
-    ignores: ["package-lock.json"],
-    plugins: { json },
-    languageOptions: { parser: json.parser },
-    rules: { "json/no-empty-keys": "warn" },
-  },
-
-  {
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      parser,
+      parserOptions: {
+        project: "./tsconfig.json",
+        tsconfigRootDir: process.cwd(),
+        sourceType: "module",
+      },
+    },
+    plugins: { "@typescript-eslint": tsPlugin },
+    ...tsPlugin.configs.recommendedTypeChecked,
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
     },
   },
-];
+  {
+    files: ["**/*.json"],
+    ignores: ["config.schema.json", "nodemon.json", "package.json", "package-lock.json"],
+    plugins: { json },
+    language: "json/json",
+    ...json.configs.recommended,
+    rules: {
+      "no-irregular-whitespace": "off",
+    },
+  },
+]);

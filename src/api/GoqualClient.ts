@@ -18,6 +18,11 @@ export class HejhomeApiClient {
 
   constructor(private readonly host: string) {}
 
+  // TODO: Hardcode the Hejhome API client ID here
+  private static readonly CLIENT_ID = '';
+  // TODO: Hardcode the Hejhome API client secret here
+  private static readonly CLIENT_SECRET = '';
+
   async login(username: string, password: string): Promise<void> {
     const res = await fetch(`${this.host}/api/login`, {
       method: 'POST',
@@ -33,6 +38,38 @@ export class HejhomeApiClient {
 
     const data = await res.json() as { token: string };
     this.token = data.token;
+  }
+
+  async getToken(
+    clientId: string = HejhomeApiClient.CLIENT_ID,
+    clientSecret: string = HejhomeApiClient.CLIENT_SECRET,
+    username: string,
+    password: string,
+  ): Promise<void> {
+    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+    const res = await fetch(`${this.host}/oauth/token`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to get token: ${res.status}`);
+    }
+
+    const data = (await res.json()) as { access_token: string };
+    this.token = data.access_token;
+  }
+
+  async getUser(): Promise<unknown> {
+    const res = await this.request('/api/user');
+    if (!res.ok) {
+      throw new Error(`Failed to fetch user: ${res.status}`);
+    }
+    return await res.json();
   }
 
   private async request(path: string, options: RequestInit = {}): Promise<Response> {

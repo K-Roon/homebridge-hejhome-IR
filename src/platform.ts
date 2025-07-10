@@ -31,9 +31,19 @@ export class HejhomeIRPlatform implements DynamicPlatformPlugin {
   ) {
     this.apiClient = new HejhomeApiClient(config.host);
 
+    // Credentials from the Homebridge UI
+    const userId = config.username;
+    const userPassword = config.password;
+
+    // TODO: Hardcode your Hejhome API client ID here
+    const API_CLIENT_ID = '';
+    // TODO: Hardcode your Hejhome API client secret here
+    const API_CLIENT_SECRET = '';
+
     this.api.on('didFinishLaunching', async () => {
       try {
-        await this.apiClient.login(config.username, config.password);
+        await this.apiClient.getToken(API_CLIENT_ID, API_CLIENT_SECRET, userId, userPassword);
+        await this.apiClient.login(userId, userPassword);
         const devices = await this.apiClient.getIRDevices();
         const supported = devices.filter(d =>
           SUPPORTED_TYPES.has(d.deviceType as typeof SUPPORTED_DEVICE_TYPES[number])

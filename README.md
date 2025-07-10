@@ -1,14 +1,14 @@
 # homebridge-hejhome-IR
 
-현재 버전: **0.0.5** (Homebridge 플러그인 등록 완료)
+현재 버전: **0.0.6** (Homebridge 플러그인 등록 완료)
 
 한국어가 지원되는 Homebridge IR 서비스입니다. 아래 단계에 따라 Homebridge와 헤이홈(Hejhome)을 시작할 수 있는 기본 환경을 구축할 수 있습니다.
 
 현재 버전에서는 다음과 같은 5가지 IR 기기 종류를 지원합니다.
 
 - IR 에어컨
+- IR 램프
 - IR 선풍기
-- IR Lamp
 - IR 공기청정기
 - IR TV
 

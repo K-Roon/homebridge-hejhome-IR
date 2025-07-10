@@ -24,7 +24,7 @@ class SquareOAuthClient {
     return cookie?.match(/JSESSIONID=([^;]+)/)?.[1];
   }
 
-  private async requestAuthCode(cookie: string): Promise<string | null> {
+  private async requestAuthCode(cookie: string, auth: string): Promise<string | null> {
     const url = new URL('https://square.hej.so/oauth/authorize');
     url.searchParams.set('client_id', HEJ_CLIENT_ID);
     url.searchParams.set('redirect_uri', 'https://square.hej.so/list');
@@ -33,7 +33,10 @@ class SquareOAuthClient {
     url.searchParams.set('vendor', 'shop');
 
     const res = await fetch(url.toString(), {
-      headers: { cookie },
+      headers: {
+        cookie,
+        authorization: auth,
+      },
       redirect: 'manual',
     });
     const location = res.headers.get('location');
@@ -93,7 +96,7 @@ class SquareOAuthClient {
     }
 
     const cookie = `username=${encodeURIComponent(email)}; JSESSIONID=${session}`;
-    const code = await this.requestAuthCode(cookie);
+    const code = await this.requestAuthCode(cookie, auth);
     if (!code) {
       this.log.error('Failed to obtain authorization code');
       return;

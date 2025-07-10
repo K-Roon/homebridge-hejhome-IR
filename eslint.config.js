@@ -6,14 +6,7 @@ import json from "@eslint/json";
 import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
-  globalIgnores([
-    "dist/**",
-    "node_modules/**",
-    "package.json",
-    "package-lock.json",
-    "config.schema.json",
-    "nodemon.json"
-  ]),
+  globalIgnores(["dist/**", "node_modules/**", "package.json", "nodemon.json"]),
 
   js.configs.recommended,
 

@@ -23,7 +23,7 @@ class SquareOAuthClient {
       this.log.error(`Login failed: ${resp.status}`)
       return
     }
-    const raw = (resp.headers as unknown as FetchHeaders).raw()['set-cookie']?.join('; ')
+    const raw = resp.headers.get('set-cookie')
     const match = raw?.match(/(JSESSIONID=[^;]+).*?(XSRF-TOKEN=[^;]+)/)
     return match ? `${match[1]}; ${match[2]}` : undefined
   }

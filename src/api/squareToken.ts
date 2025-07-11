@@ -14,19 +14,25 @@ class SquareOAuthClient {
   constructor(private readonly log: Logger) {}
 
   private async startSession(email: string, pw: string): Promise<string | undefined> {
-    const resp = await fetch('https://square.hej.so/oauth/login?vendor=shop', {
-      method: 'POST',
-      headers: { authorization: encodeBasic(email, pw) },
-      redirect: 'manual',
-    })
-    if (resp.status !== 302) {
-      this.log.error(`Login failed: ${resp.status}`)
-      return
-    }
-    const raw = resp.headers.get('set-cookie')
-    const match = raw?.match(/(JSESSIONID=[^;]+).*?(XSRF-TOKEN=[^;]+)/)
-    return match ? `${match[1]}; ${match[2]}` : undefined
+  const resp = await fetch('https://square.hej.so/oauth/login?vendor=shop', {
+    method: 'POST',
+    headers: { authorization: encodeBasic(email, pw) },
+    redirect: 'manual',
+  });
+
+  // 200 또는 302 둘 다 성공으로 처리
+  if (resp.status !== 200 && resp.status !== 302) {
+    this.log.error(`Login failed: ${resp.status}`);
+    return;
   }
+
+  const raw = resp.headers.getSetCookie?.()
+            ?? resp.headers.get('set-cookie')?.split(/,(?=[^;]+=[^;]+)/);
+
+  const cookies = raw?.join('; ');
+  const m = cookies?.match(/(JSESSIONID=[^;]+).*?(XSRF-TOKEN=[^;]+)/);
+  return m ? `${m[1]}; ${m[2]}` : undefined;
+}
 
   private async fetchAuthCode(cookies: string): Promise<string | null> {
     const url = new URL('https://square.hej.so/oauth/authorize')

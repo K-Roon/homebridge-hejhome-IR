@@ -39,7 +39,6 @@
   "dependencies": {
     "@typescript-eslint/eslint-plugin": "^8.36.0",
     "homebridge-lib": "^7.1.4",
-    "set-cookie-parser": "^2.7.1",
     "validator": "^13.9.0"
   },
   "devDependencies": {
@@ -48,7 +47,6 @@
     "@eslint/json": "^0.12.0",
     "@eslint/markdown": "^6.6.0",
     "@types/node": "^22.13.5",
-    "@types/set-cookie-parser": "^2.4.10",
     "@types/validator": "^13.7.11",
     "@typescript-eslint/parser": "^8.36.0",
     "eslint": "^9.30.1",

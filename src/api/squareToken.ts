@@ -8,19 +8,64 @@ export interface SquareToken {
   expires_in: number;
 }
 
+
 export async function obtainSquareToken(
   log: Logger,
   email: string,
   password: string,
 ): Promise<string | null> {
-  const svc = new SquareTokenService(
-    log,
-    'hejhomeapp',
-    'https://square.hej.so/blank.html',
-  );
-  const tokObj = await svc.getToken(email, password);
-  return tokObj?.access_token ?? null;
+  const makeAuth = (id: string, pw: string) =>
+    'Basic ' + Buffer.from(`${id}:${pw}`).toString('base64');
+
+  const HEJ_CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7';
+  const HEJ_CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12';
+
+  /* 1️⃣  Basic-Auth 로그인 → JSESSIONID */
+  const loginRes = await fetch('https://square.hej.so/oauth/login?vendor=shop', {
+    method: 'POST',
+    headers: { authorization: makeAuth(email, password) },
+    redirect: 'manual',
+  });
+  const setCookie = loginRes.headers.get('set-cookie') ?? '';
+  const jsession = /JSESSIONID=([^;]+)/.exec(setCookie)?.[1];
+  if (!jsession) { log.error('JSESSIONID 얻기 실패'); return null; }
+
+  /* 2️⃣  GET /oauth/authorize → code */
+  const username = encodeURIComponent(email);
+  const cookie = `username=${username}; JSESSIONID=${jsession}`;
+  const authURL =
+    `https://square.hej.so/oauth/authorize?client_id=${HEJ_CLIENT_ID}` +
+    `&redirect_uri=https%3A%2F%2Fsquare.hej.so%2Flist&response_type=code&scope=shop`;
+
+  const authRes = await fetch(authURL, {
+    method: 'GET',
+    headers: { cookie },
+    redirect: 'manual',
+  });
+  const location = authRes.headers.get('location') ?? '';
+  const codeMatch = /code=([^&]+)/.exec(location);
+  if (!codeMatch) { log.error('authorization code 획득 실패'); return null; }
+  const code = codeMatch[1];
+
+  /* 3️⃣  POST /oauth/token → access_token */
+  const tokenRes = await fetch('https://square.hej.so/oauth/token', {
+    method: 'POST',
+    headers: {
+      authorization: makeAuth(HEJ_CLIENT_ID, HEJ_CLIENT_SECRET),
+      'content-type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      client_id: HEJ_CLIENT_ID,
+      redirect_uri: 'https://square.hej.so/list',
+    }),
+  });
+  if (!tokenRes.ok) { log.error(`token 교환 실패 ${tokenRes.status}`); return null; }
+  const { access_token } = await tokenRes.json() as { access_token: string };
+  return access_token;
 }
+
 
 export class SquareTokenService {
   private log: Logger;

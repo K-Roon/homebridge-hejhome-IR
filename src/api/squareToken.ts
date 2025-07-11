@@ -16,7 +16,7 @@ class SquareOAuthClient {
   constructor(private readonly log: Logger) {}
 
   private async fetchSession(auth: string): Promise<string | undefined> {
-    const resp = await fetch('https://square.hej.so/oauth/login?vendor=openapi', {
+    const resp = await fetch('https://square.hej.so/oauth/login?vendor=shop', {
       method: 'POST',
       headers: {
         authorization: auth,
@@ -33,8 +33,8 @@ class SquareOAuthClient {
     url.searchParams.set('client_id', HEJ_CLIENT_ID);
     url.searchParams.set('redirect_uri', 'https://square.hej.so/list');
     url.searchParams.set('response_type', 'code');
-    url.searchParams.set('scope', 'openapi');
-    url.searchParams.set('vendor', 'openapi');
+    url.searchParams.set('scope', 'shop');
+    url.searchParams.set('vendor', 'shop');
 
     const res = await fetch(url.toString(), {
       headers: {

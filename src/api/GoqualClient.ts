@@ -49,7 +49,7 @@ export class HejhomeApiClient {
 
   constructor(
     private readonly host: string,
-    private readonly log?: Logger,
+    private readonly log: Logger,
   ) {}
 
   private static readonly CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7';
@@ -57,7 +57,7 @@ export class HejhomeApiClient {
 
   async login(username: string, password: string): Promise<void> {
     const url = `${this.host}/openapi/login`;
-    this.log?.debug(`POST ${url}`);
+    this.log.info(`POST ${url}`);
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -82,7 +82,7 @@ export class HejhomeApiClient {
   ): Promise<void> {
     const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
     const url = `${this.host}/oauth/token`;
-    this.log?.debug(`POST ${url}`);
+    this.log.info(`POST ${url}`);
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -103,7 +103,7 @@ export class HejhomeApiClient {
   async getTokenFromSquare(log: Logger, email: string, password: string): Promise<void> {
     const token = await obtainSquareToken(log, email, password);
     if (!token) {
-      throw new Error('Failed to retrieve token from Hej Square');
+      throw new Error(`Failed to retrieve token from Hej Square.`);
     }
     this.token = token;
   }
@@ -137,7 +137,7 @@ export class HejhomeApiClient {
   private async request(path: string, options: RequestInit = {}): Promise<Response> {
     const url = `${this.host}${path}`;
     const method = options.method ?? 'GET';
-    this.log?.debug(`${method} ${url}`);
+    this.log.info(`${method} ${url}`);
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',

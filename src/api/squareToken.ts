@@ -47,7 +47,7 @@ class SquareOAuthClient {
     });
     const location = res.headers.get('location');
     if (!location) {
-      this.log.error(`Authorize request failed with status ${res.status}`);
+      this.log.error(`Authorize request failed with status ${res.status}. URL: ${res.url}`);
       return null;
     }
     return location.match(/code=([^&]+)/)?.[1] ?? null;

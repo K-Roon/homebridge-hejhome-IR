@@ -22,7 +22,7 @@ export abstract class IrBaseAccessory {
   protected async fire(cmd: string): Promise<void> {
     try {
       await this.api.sendIRCommand(this.device.id, cmd);
-      this.log.debug(`${this.device.name} → ${cmd}`);
+      this.log.info(`${this.device.name} → ${cmd}`);
     } catch (e) {
       this.log.error('IR 전송 실패:', e);
     }

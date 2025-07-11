@@ -1,6 +1,6 @@
 import type { Logger } from 'homebridge'
 import validator from 'validator'
-import fetch from 'node-fetch'
+//import fetch from 'node-fetch'
 
 globalThis.fetch = fetch as unknown as typeof globalThis.fetch
 
@@ -11,8 +11,7 @@ const basic = (id: string, pw: string) =>
   `Basic ${Buffer.from(`${id}:${pw}`).toString('base64')}`
 
 const splitCookies = (h: any): string[] => {
-  if (typeof h.getSetCookie === 'function') return h.getSetCookie()
-  if (typeof h.raw === 'function')          return h.raw()['set-cookie'] ?? []
+  if (typeof h.getSetCookie === 'function') return h.getSetCookie()  // Node 20+
   const s = h.get?.('set-cookie') ?? ''
   return s ? s.split(/,(?=[^;]+=[^;]+)/) : []
 }

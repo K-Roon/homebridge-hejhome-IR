@@ -51,23 +51,37 @@ export class SquareTokenService {
 
   /* ---------- private ---------- */
   private async loginAndGetCookie(id: string, pw: string): Promise<string | null> {
-    const res = await fetch('https://square.hej.so/oauth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': this.userAgent,
-      },
-      body: JSON.stringify({ loginId: id, password: pw }),
-      redirect: 'manual',
-    });
-
-    if (![302, 303].includes(res.status)) {
-      this.log.warn(`Square login unexpected status ${res.status}`);
-      return null;
-    }
-    const cookie = res.headers.get('set-cookie') ?? '';
-    return cookie.includes('XSRF-TOKEN') ? cookie : null;
+  /* ➊ 첫 GET으로 쿠키(XSRF-TOKEN, JSESSIONID) 확보 */
+  const loginUrl = 'https://square.hej.so/oauth/login';
+  const pre = await fetch(loginUrl, { redirect: 'manual' });
+  if (![200, 302].includes(pre.status)) {
+    this.log.warn(`Square pre-login failed ${pre.status}`);
+    return null;
   }
+  const rawCookie = pre.headers.get('set-cookie') ?? '';
+  const xsrf = /XSRF-TOKEN=([^;]+)/.exec(rawCookie)?.[1];
+  if (!xsrf) { this.log.warn('No XSRF token'); return null; }
+
+  /* ➋ 본 POST – url-encoded + 헤더 */
+  const post = await fetch(loginUrl, {
+    method: 'POST',
+    headers: {
+      Cookie: rawCookie,
+      'X-XSRF-TOKEN': xsrf,
+      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      'User-Agent': this.userAgent,
+    },
+    body: new URLSearchParams({ loginId: id, password: pw }),
+    redirect: 'manual',
+  });
+
+  if (![302, 303].includes(post.status)) {
+    this.log.warn(`Square login failed ${post.status}`);
+    return null;
+  }
+  /* 로그인 성공 시 서버가 다시 쿠키 갱신하므로 합쳐서 반환 */
+  return (rawCookie + '; ' + (post.headers.get('set-cookie') ?? '')).trim();
+}
 
   private async getCode(cookie: string): Promise<string | null> {
     const url = new URL('https://square.hej.so/oauth/authorize');

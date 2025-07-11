@@ -13,7 +13,7 @@ const encodeBasicAuth = (id: string, pw: string): string =>
   `Basic ${Buffer.from(`${id}:${pw}`).toString('base64')}`;
 
 class SquareOAuthClient {
-  constructor(private readonly log: Logger) {}
+  constructor(private readonly log: Logger) { }
 
   private async fetchSession(auth: string): Promise<string | undefined> {
     const resp = await fetch('https://square.hej.so/oauth/login?vendor=shop', {
@@ -22,8 +22,8 @@ class SquareOAuthClient {
         authorization: auth,
       },
     });
-    const cookie = resp.headers.get('set-cookie');
-    return cookie?.match(/JSESSIONID=([^;]+)/)?.[1];
+    const raw = resp.headers.get('set-cookie');
+    return raw?.match(/(JSESSIONID=[^;]+)/)?.[1];
   }
 
   private async requestAuthCode(cookie: string): Promise<string | null> {
@@ -36,7 +36,7 @@ class SquareOAuthClient {
 
     const res = await fetch(url.toString(), {
       headers: {
-        cookie,
+        Cookie: cookie,
       },
       redirect: 'manual',
     });

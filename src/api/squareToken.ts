@@ -1,6 +1,6 @@
 import type { Logger } from 'homebridge'
 import validator from 'validator'
-import fetch, { Headers as FetchHeaders } from 'node-fetch'
+//import fetch, { Headers as FetchHeaders } from 'node-fetch'
 
 globalThis.fetch = fetch as unknown as typeof globalThis.fetch
 

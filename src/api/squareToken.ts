@@ -1,90 +1,121 @@
-import type { Logger } from 'homebridge'
-import validator from 'validator'
-//import fetch from 'node-fetch'
+/* Hej Square OAuth helper — patched 2025-07-11 */
+import { URL, URLSearchParams } from 'url';
+import type { Logger } from 'homebridge';
 
-globalThis.fetch = fetch as unknown as typeof globalThis.fetch
-
-export const HEJ_CLIENT_ID     = 'e08a10573e37452daf2b948b390d5ef7'
-export const HEJ_CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12'
-
-const basic = (id: string, pw: string) =>
-  `Basic ${Buffer.from(`${id}:${pw}`).toString('base64')}`
-
-const splitCookies = (h: any): string[] => {
-  if (typeof h.getSetCookie === 'function') return h.getSetCookie()  // Node 20+
-  const s = h.get?.('set-cookie') ?? ''
-  return s ? s.split(/,(?=[^;]+=[^;]+)/) : []
+export interface SquareToken {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
 }
 
-const pick = (arr: string[], name: string): string | undefined =>
-  arr.find(c => c.startsWith(name + '='))?.split('=', 2)[1]?.split(';', 1)[0]
+export async function obtainSquareToken(
+  log: Logger,
+  email: string,
+  password: string,
+): Promise<string | null> {
+  const svc = new SquareTokenService(
+    log,
+    'hejhomeapp',
+    'https://square.hej.so/blank.html',
+  );
+  const tokObj = await svc.getToken(email, password);
+  return tokObj?.access_token ?? null;
+}
 
-class SquareOAuthClient {
-  constructor(private log: Logger) {}
+export class SquareTokenService {
+  private log: Logger;
+  private clientId: string;
+  private redirectUri: string;
+  private userAgent =
+    'homebridge-hejhome-ir/0.0.99 (+https://github.com/k-roon/homebridge-hejhome-ir)';
 
-  private async startSession(mail: string, pw: string): Promise<string | undefined> {
-    const r = await fetch('https://square.hej.so/oauth/login?vendor=shop', {
+  constructor(log: Logger, clientId: string, redirectUri: string) {
+    this.log = log;
+    this.clientId = clientId;
+    this.redirectUri = redirectUri;
+  }
+
+  /** 3-leg OAuth: login → code → token */
+  public async getToken(
+    username: string,
+    password: string,
+  ): Promise<SquareToken | null> {
+    const cookie = await this.loginAndGetCookie(username, password);
+    if (!cookie) return null;
+
+    const code = await this.getCode(cookie);
+    if (!code) return null;
+
+    return this.exchangeCode(code, cookie);
+  }
+
+  /* ---------- private ---------- */
+  private async loginAndGetCookie(id: string, pw: string): Promise<string | null> {
+    const res = await fetch('https://square.hej.so/oauth/login', {
       method: 'POST',
-      headers: { authorization: basic(mail, pw) },
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': this.userAgent,
+      },
+      body: JSON.stringify({ loginId: id, password: pw }),
       redirect: 'manual',
-    })
-    if (r.status !== 200 && r.status !== 302) {
-      this.log.error(`Login failed: ${r.status}`)
-      return
+    });
+
+    if (![302, 303].includes(res.status)) {
+      this.log.warn(`Square login unexpected status ${res.status}`);
+      return null;
     }
-    const arr  = splitCookies(r.headers)
-    const js   = pick(arr, 'JSESSIONID')
-    const xsrf = pick(arr, 'XSRF-TOKEN')
-    return js && xsrf ? `JSESSIONID=${js}; XSRF-TOKEN=${xsrf}` : undefined
+    const cookie = res.headers.get('set-cookie') ?? '';
+    return cookie.includes('XSRF-TOKEN') ? cookie : null;
   }
 
   private async getCode(cookie: string): Promise<string | null> {
-    const u = new URL('https://square.hej.so/oauth/authorize')
-    u.searchParams.set('client_id', HEJ_CLIENT_ID)
-    u.searchParams.set('redirect_uri', 'https://square.hej.so/list')
-    u.searchParams.set('response_type', 'code')
-    u.searchParams.set('scope', 'shop')
-    u.searchParams.set('vendor', 'shop')
+    const url = new URL('https://square.hej.so/oauth/authorize');
+    url.search = new URLSearchParams({
+      client_id: this.clientId,
+      response_type: 'code',
+      scope: 'openid offline_access',
+      redirect_uri: this.redirectUri,
+    }).toString();
 
-    const r = await fetch(u, {
+    const res = await fetch(url, {
       headers: {
         Cookie: cookie,
-        'X-XSRF-TOKEN': /XSRF-TOKEN=([^;]+)/.exec(cookie)?.[1] ?? '',
+        'X-XSRF-TOKEN': this.extractXsrf(cookie),
+        'User-Agent': this.userAgent,
       },
       redirect: 'manual',
-    })
-    const loc = r.headers.get('location')
-    return loc ? /code=([^&]+)/.exec(loc)?.[1] ?? null : null
+    });
+
+    if (![302, 303, 307].includes(res.status)) return null;
+    const m = /[?&]code=([^&]+)/.exec(res.headers.get('location') ?? '');
+    return m ? decodeURIComponent(m[1]) : null;
   }
 
-  private async exchange(code: string): Promise<string | undefined> {
-    const body = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      client_id: HEJ_CLIENT_ID,
-      redirect_uri: 'https://square.hej.so/list',
-    })
-    const r = await fetch('https://square.hej.so/oauth/token', {
+  private async exchangeCode(
+    code: string,
+    cookie: string,
+  ): Promise<SquareToken | null> {
+    const res = await fetch('https://square.hej.so/oauth/token', {
       method: 'POST',
       headers: {
-        authorization: basic(HEJ_CLIENT_ID, HEJ_CLIENT_SECRET),
-        'content-type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Cookie: cookie,
+        'X-XSRF-TOKEN': this.extractXsrf(cookie),
+        'User-Agent': this.userAgent,
       },
-      body: body.toString(),
-    })
-    if (!r.ok) { this.log.error(`Token exchange failed: ${r.status}`); return }
-    return (await r.json() as any).access_token
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: this.clientId,
+        code,
+        redirect_uri: this.redirectUri,
+      }),
+    });
+
+    return res.ok ? ((await res.json()) as SquareToken) : null;
   }
 
-  async fetchToken(mail: string, pw: string): Promise<string | undefined> {
-    if (!validator.isEmail(mail) || pw.length < 4) return
-    const ck = await this.startSession(mail, pw)
-    if (!ck) return
-    const cd = await this.getCode(ck)
-    if (!cd) return
-    return this.exchange(cd)
+  private extractXsrf(cookie: string): string {
+    return /XSRF-TOKEN=([^;]+)/.exec(cookie)?.[1] ?? '';
   }
 }
-
-export const obtainSquareToken = (log: Logger, e: string, p: string) =>
-  new SquareOAuthClient(log).fetchToken(e, p)

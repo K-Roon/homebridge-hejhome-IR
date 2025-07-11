@@ -8,12 +8,14 @@
     "rootDir": "src",
     "module": "NodeNext",
     "moduleResolution": "nodenext",
+    "resolveJsonModule": true,
     "strict": true,
     "declaration": true,
     "outDir": "dist",
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
   "include": [

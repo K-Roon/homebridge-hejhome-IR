@@ -47,16 +47,21 @@ export const SUPPORTED_DEVICE_TYPES = [
 export class HejhomeApiClient {
   private token = '';
 
-  constructor(private readonly host: string) {}
+  constructor(
+    private readonly host: string,
+    private readonly log?: Logger,
+  ) {}
 
   private static readonly CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7';
   private static readonly CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12';
 
   async login(username: string, password: string): Promise<void> {
-    const res = await fetch(`${this.host}/api/login`, {
+    const url = `${this.host}/openapi/login`;
+    this.log?.debug(`POST ${url}`);
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json;charset=UTF-8',
       },
       body: JSON.stringify({ username, password }),
     });
@@ -76,7 +81,9 @@ export class HejhomeApiClient {
     password: string,
   ): Promise<void> {
     const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-    const res = await fetch(`${this.host}/oauth/token`, {
+    const url = `${this.host}/oauth/token`;
+    this.log?.debug(`POST ${url}`);
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         Authorization: `Basic ${auth}`,
@@ -102,18 +109,15 @@ export class HejhomeApiClient {
   }
 
   async getUser(): Promise<MemberList> {
-    const res = await this.request('/dashboard/config/user');
+    const res = await this.request('/openapi/user');
     if (!res.ok) {
       throw new Error(`Failed to fetch user: ${res.status}`);
     }
     return await res.json() as MemberList;
   }
 
-  async getDevicesState(familyId: number, roomId?: number): Promise<HejhomeDevice[]> {
-    const path = roomId
-      ? `/dashboard/${familyId}/room/${roomId}/devices-state?scope=shop`
-      : `/dashboard/${familyId}/devices-state?scope=shop`;
-    const res = await this.request(path);
+  async getDevicesState(): Promise<HejhomeDevice[]> {
+    const res = await this.request('/openapi/devices/state');
     if (!res.ok) {
       throw new Error(`Failed to fetch devices state: ${res.status}`);
     }
@@ -121,7 +125,7 @@ export class HejhomeApiClient {
   }
 
   async controlDevice(deviceId: string, body: { requirments: HejDeviceState }): Promise<void> {
-    const res = await this.request(`/dashboard/control/${deviceId}`, {
+    const res = await this.request(`/openapi/control/${deviceId}`, {
       method: 'POST',
       body: JSON.stringify(body),
     });
@@ -132,6 +136,8 @@ export class HejhomeApiClient {
 
   private async request(path: string, options: RequestInit = {}): Promise<Response> {
     const url = `${this.host}${path}`;
+    const method = options.method ?? 'GET';
+    this.log?.debug(`${method} ${url}`);
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
@@ -144,7 +150,7 @@ export class HejhomeApiClient {
   }
 
   async getDevices(): Promise<HejhomeDevice[]> {
-    const res = await this.request('/api/devices');
+    const res = await this.request('/openapi/devices');
     if (!res.ok) {
       throw new Error(`Failed to fetch devices: ${res.status}`);
     }
@@ -157,7 +163,7 @@ export class HejhomeApiClient {
   }
 
   async sendIRCommand(deviceId: string, command: string): Promise<void> {
-    const res = await this.request(`/api/ir/devices/${deviceId}/commands`, {
+    const res = await this.request(`/openapi/control/${deviceId}`, {
       method: 'POST',
       body: JSON.stringify({ command }),
     });

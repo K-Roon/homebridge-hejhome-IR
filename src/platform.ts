@@ -29,7 +29,7 @@ export class HejhomeIRPlatform implements DynamicPlatformPlugin {
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    this.apiClient = new HejhomeApiClient(config.host);
+    this.apiClient = new HejhomeApiClient(config.host, this.log);
 
     // Credentials from the Homebridge UI
     const userId = config.username;

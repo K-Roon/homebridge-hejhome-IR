@@ -16,24 +16,33 @@ class SquareOAuthClient {
   constructor(private readonly log: Logger) {}
 
   private async fetchSession(auth: string): Promise<string | undefined> {
-    const resp = await fetch('https://square.hej.so/oauth/login?vendor=shop', {
+    const resp = await fetch('https://square.hej.so/oauth/login?vendor=openapi', {
       method: 'POST',
-      headers: { authorization: auth },
+      headers: {
+        authorization: auth,
+        accept: 'application/json, text/javascript, */*; q=0.01',
+        connection: 'close',
+      },
     });
     const cookie = resp.headers.get('set-cookie');
     return cookie?.match(/JSESSIONID=([^;]+)/)?.[1];
   }
 
-  private async requestAuthCode(cookie: string): Promise<string | null> {
+  private async requestAuthCode(cookie: string, auth: string): Promise<string | null> {
     const url = new URL('https://square.hej.so/oauth/authorize');
     url.searchParams.set('client_id', HEJ_CLIENT_ID);
     url.searchParams.set('redirect_uri', 'https://square.hej.so/list');
     url.searchParams.set('response_type', 'code');
-    url.searchParams.set('scope', 'shop');
-    url.searchParams.set('vendor', 'shop');
+    url.searchParams.set('scope', 'openapi');
+    url.searchParams.set('vendor', 'openapi');
 
     const res = await fetch(url.toString(), {
-      headers: { cookie },
+      headers: {
+        cookie,
+        authorization: auth,
+        accept: 'application/json, text/javascript, */*; q=0.01',
+        connection: 'close',
+      },
       redirect: 'manual',
     });
     const location = res.headers.get('location');
@@ -57,6 +66,8 @@ class SquareOAuthClient {
       headers: {
         authorization: encodeBasicAuth(HEJ_CLIENT_ID, HEJ_CLIENT_SECRET),
         'content-type': 'application/x-www-form-urlencoded',
+        accept: 'application/json, text/javascript, */*; q=0.01',
+        connection: 'close',
       },
       body: form.toString(),
       referrer: `https://square.hej.so/list?code=${code}`,
@@ -93,7 +104,7 @@ class SquareOAuthClient {
     }
 
     const cookie = `username=${encodeURIComponent(email)}; JSESSIONID=${session}`;
-    const code = await this.requestAuthCode(cookie);
+    const code = await this.requestAuthCode(cookie, auth);
     if (!code) {
       this.log.error('Failed to obtain authorization code');
       return;

@@ -18,7 +18,11 @@ class SquareOAuthClient {
   private async fetchSession(auth: string): Promise<string | undefined> {
     const resp = await fetch('https://square.hej.so/oauth/login?vendor=shop', {
       method: 'POST',
-      headers: { authorization: auth },
+      headers: {
+        authorization: auth,
+        accept: 'application/json, text/javascript, */*; q=0.01',
+        connection: 'close',
+      },
     });
     const cookie = resp.headers.get('set-cookie');
     return cookie?.match(/JSESSIONID=([^;]+)/)?.[1];
@@ -36,6 +40,8 @@ class SquareOAuthClient {
       headers: {
         cookie,
         authorization: auth,
+        accept: 'application/json, text/javascript, */*; q=0.01',
+        connection: 'close',
       },
       redirect: 'manual',
     });
@@ -60,6 +66,8 @@ class SquareOAuthClient {
       headers: {
         authorization: encodeBasicAuth(HEJ_CLIENT_ID, HEJ_CLIENT_SECRET),
         'content-type': 'application/x-www-form-urlencoded',
+        accept: 'application/json, text/javascript, */*; q=0.01',
+        connection: 'close',
       },
       body: form.toString(),
       referrer: `https://square.hej.so/list?code=${code}`,

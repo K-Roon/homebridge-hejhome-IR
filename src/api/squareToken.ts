@@ -1,7 +1,7 @@
 import type { Logger } from 'homebridge'
 import validator from 'validator'
 import fetch from 'node-fetch'
-import * as scp from 'set-cookie-parser'
+import { parse, Cookie } from 'set-cookie-parser'
 
 globalThis.fetch = fetch as unknown as typeof globalThis.fetch
 
@@ -14,7 +14,6 @@ const basic = (id: string, pw: string) =>
 class SquareOAuthClient {
   constructor(private log: Logger) {}
 
-  /** 로그인 → JSESSIONID & XSRF-TOKEN */
   private async startSession(mail: string, pw: string): Promise<string | undefined> {
     const resp = await fetch('https://square.hej.so/oauth/login?vendor=shop', {
       method: 'POST',
@@ -27,14 +26,13 @@ class SquareOAuthClient {
       return
     }
 
-    /* 모든 Set-Cookie 헤더 파싱 */
-    const cookies = scp.parseHeaders(resp.headers as any)
-    const js  = cookies.find(c => c.name === 'JSESSIONID')?.value
-    const xs  = cookies.find(c => c.name === 'XSRF-TOKEN')?.value
+    const raw = (resp.headers as any).raw()['set-cookie'] as string[] | undefined
+    const cookies = parse(raw ?? []) as Cookie[]
+    const js  = cookies.find((c: Cookie) => c.name === 'JSESSIONID')?.value
+    const xs  = cookies.find((c: Cookie) => c.name === 'XSRF-TOKEN')?.value
     return js && xs ? `JSESSIONID=${js}; XSRF-TOKEN=${xs}` : undefined
   }
 
-  /** /oauth/authorize → code */
   private async getCode(cookies: string): Promise<string | null> {
     const u = new URL('https://square.hej.so/oauth/authorize')
     u.searchParams.set('client_id', HEJ_CLIENT_ID)
@@ -44,7 +42,10 @@ class SquareOAuthClient {
     u.searchParams.set('vendor', 'shop')
 
     const r = await fetch(u, {
-      headers: { Cookie: cookies, 'X-XSRF-TOKEN': /XSRF-TOKEN=([^;]+)/.exec(cookies)?.[1] ?? '' },
+      headers: {
+        Cookie: cookies,
+        'X-XSRF-TOKEN': /XSRF-TOKEN=([^;]+)/.exec(cookies)?.[1] ?? '',
+      },
       redirect: 'manual',
     })
 
@@ -53,7 +54,6 @@ class SquareOAuthClient {
     return /code=([^&]+)/.exec(loc)?.[1] ?? null
   }
 
-  /** /oauth/token → access_token */
   private async exchange(code: string): Promise<string | undefined> {
     const body = new URLSearchParams({
       grant_type: 'authorization_code',

@@ -1,61 +1,59 @@
 import type { Logger } from 'homebridge'
 import validator from 'validator'
-//import fetch, { Headers as FetchHeaders } from 'node-fetch'
+import fetch from 'node-fetch'
+import * as scp from 'set-cookie-parser'
 
 globalThis.fetch = fetch as unknown as typeof globalThis.fetch
 
-export const HEJ_CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7'
+export const HEJ_CLIENT_ID     = 'e08a10573e37452daf2b948b390d5ef7'
 export const HEJ_CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12'
 
-const encodeBasic = (id: string, pw: string): string =>
+const basic = (id: string, pw: string) =>
   `Basic ${Buffer.from(`${id}:${pw}`).toString('base64')}`
 
 class SquareOAuthClient {
-  constructor(private readonly log: Logger) {}
+  constructor(private log: Logger) {}
 
-  private async startSession(email: string, pw: string): Promise<string | undefined> {
-  const resp = await fetch('https://square.hej.so/oauth/login?vendor=shop', {
-    method: 'POST',
-    headers: { authorization: encodeBasic(email, pw) },
-    redirect: 'manual',
-  });
-
-  // 200 또는 302 둘 다 성공으로 처리
-  if (resp.status !== 200 && resp.status !== 302) {
-    this.log.error(`Login failed: ${resp.status}`);
-    return;
-  }
-
-  const raw = resp.headers.getSetCookie?.()
-            ?? resp.headers.get('set-cookie')?.split(/,(?=[^;]+=[^;]+)/);
-
-  const cookies = raw?.join('; ');
-  const m = cookies?.match(/(JSESSIONID=[^;]+).*?(XSRF-TOKEN=[^;]+)/);
-  return m ? `${m[1]}; ${m[2]}` : undefined;
-}
-
-  private async fetchAuthCode(cookies: string): Promise<string | null> {
-    const url = new URL('https://square.hej.so/oauth/authorize')
-    url.searchParams.set('client_id', HEJ_CLIENT_ID)
-    url.searchParams.set('redirect_uri', 'https://square.hej.so/list')
-    url.searchParams.set('response_type', 'code')
-    url.searchParams.set('scope', 'shop')
-    url.searchParams.set('vendor', 'shop')
-    const res = await fetch(url.toString(), {
-      headers: {
-        Cookie: cookies,
-        'X-XSRF-TOKEN': cookies.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '',
-      },
+  /** 로그인 → JSESSIONID & XSRF-TOKEN */
+  private async startSession(mail: string, pw: string): Promise<string | undefined> {
+    const resp = await fetch('https://square.hej.so/oauth/login?vendor=shop', {
+      method: 'POST',
+      headers: { authorization: basic(mail, pw) },
       redirect: 'manual',
     })
-    const location = res.headers.get('location')
-    if (!location) {
-      this.log.error(`Authorize request failed: ${res.status}`)
-      return null
+
+    if (resp.status !== 200 && resp.status !== 302) {
+      this.log.error(`Login failed: ${resp.status}`)
+      return
     }
-    return location.match(/code=([^&]+)/)?.[1] ?? null
+
+    /* 모든 Set-Cookie 헤더 파싱 */
+    const cookies = scp.parseHeaders(resp.headers as any)
+    const js  = cookies.find(c => c.name === 'JSESSIONID')?.value
+    const xs  = cookies.find(c => c.name === 'XSRF-TOKEN')?.value
+    return js && xs ? `JSESSIONID=${js}; XSRF-TOKEN=${xs}` : undefined
   }
 
+  /** /oauth/authorize → code */
+  private async getCode(cookies: string): Promise<string | null> {
+    const u = new URL('https://square.hej.so/oauth/authorize')
+    u.searchParams.set('client_id', HEJ_CLIENT_ID)
+    u.searchParams.set('redirect_uri', 'https://square.hej.so/list')
+    u.searchParams.set('response_type', 'code')
+    u.searchParams.set('scope', 'shop')
+    u.searchParams.set('vendor', 'shop')
+
+    const r = await fetch(u, {
+      headers: { Cookie: cookies, 'X-XSRF-TOKEN': /XSRF-TOKEN=([^;]+)/.exec(cookies)?.[1] ?? '' },
+      redirect: 'manual',
+    })
+
+    const loc = r.headers.get('location')
+    if (!loc) { this.log.error(`Authorize failed: ${r.status}`); return null }
+    return /code=([^&]+)/.exec(loc)?.[1] ?? null
+  }
+
+  /** /oauth/token → access_token */
   private async exchange(code: string): Promise<string | undefined> {
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
@@ -63,43 +61,28 @@ class SquareOAuthClient {
       client_id: HEJ_CLIENT_ID,
       redirect_uri: 'https://square.hej.so/list',
     })
-    const res = await fetch('https://square.hej.so/oauth/token', {
+
+    const r = await fetch('https://square.hej.so/oauth/token', {
       method: 'POST',
       headers: {
-        authorization: encodeBasic(HEJ_CLIENT_ID, HEJ_CLIENT_SECRET),
+        authorization: basic(HEJ_CLIENT_ID, HEJ_CLIENT_SECRET),
         'content-type': 'application/x-www-form-urlencoded',
       },
       body: body.toString(),
     })
-    if (!res.ok) {
-      this.log.error(`Token exchange failed: ${res.status}`)
-      return
-    }
-    const { access_token } = (await res.json()) as { access_token: string }
-    return access_token
+    if (!r.ok) { this.log.error(`Token exchange failed: ${r.status}`); return }
+    return (await r.json() as any).access_token
   }
 
-  async fetchToken(email: string, password: string): Promise<string | undefined> {
-    if (!validator.isEmail(email)) {
-      this.log.error('Invalid email address')
-      return
-    }
-    if (password.length < 4) {
-      this.log.error('Password must be at least 4 characters')
-      return
-    }
-    const cookies = await this.startSession(email, password)
-    if (!cookies) return
-    const code = await this.fetchAuthCode(cookies)
+  async fetchToken(mail: string, pw: string): Promise<string | undefined> {
+    if (!validator.isEmail(mail) || pw.length < 4) return
+    const ck = await this.startSession(mail, pw)
+    if (!ck) return
+    const code = await this.getCode(ck)
     if (!code) return
     return this.exchange(code)
   }
 }
 
-export const obtainSquareToken = async (
-  log: Logger,
-  email: string,
-  password: string,
-): Promise<string | undefined> => {
-  return new SquareOAuthClient(log).fetchToken(email, password);
-};
+export const obtainSquareToken = (log: Logger, e: string, p: string) =>
+  new SquareOAuthClient(log).fetchToken(e, p)

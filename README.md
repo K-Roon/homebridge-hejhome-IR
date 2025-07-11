@@ -50,8 +50,7 @@
       }
     ]
   }
-  ```
-
+``` ```
 5. **Homebridge 실행**
    ```bash
    homebridge

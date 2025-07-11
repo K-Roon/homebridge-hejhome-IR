@@ -5,17 +5,12 @@ export interface HejhomeDevice {
   id: string;
   name: string;
   deviceType: string;
-  // Additional properties may be provided by Hejhome
 }
 
 export interface HejDeviceState {
   power?: boolean;
   lightMode?: 'WHITE' | 'COLOR' | 'SCENE';
-  hsvColor?: {
-    hue: number;
-    saturation: number;
-    brightness: number;
-  };
+  hsvColor?: { hue: number; saturation: number; brightness: number };
   brightness?: number;
   sceneValues?: string;
   power1?: boolean;
@@ -44,36 +39,41 @@ export const SUPPORTED_DEVICE_TYPES = [
   'IrTv',
 ] as const;
 
+/**
+ * REST-API 클라이언트
+ */
 export class HejhomeApiClient {
   private token = '';
+
+  private static readonly CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7';
+  private static readonly CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12';
 
   constructor(
     private readonly host: string,
     private readonly log: Logger,
   ) {}
 
-  private static readonly CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7';
-  private static readonly CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12';
-
+  /* --------------------------------------------------------
+   * 1) 레거시 /openapi/login (JWT 방식)
+   * ------------------------------------------------------ */
   async login(username: string, password: string): Promise<void> {
     const url = `${this.host}/openapi/login`;
-    this.log.info(`POST ${url}`);
+    this.log.debug(`POST ${url}`);
     const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json;charset=UTF-8',
-      },
+      headers: { 'Content-Type': 'application/json;charset=UTF-8' },
       body: JSON.stringify({ username, password }),
     });
 
-    if (!res.ok) {
-      throw new Error(`Failed to login: ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`Failed to login: ${res.status}`);
 
-    const data = await res.json() as { token: string };
-    this.token = data.token;
+    const { token } = (await res.json()) as { token: string };
+    this.token = token;
   }
 
+  /* --------------------------------------------------------
+   * 2) OAuth 2.0 /oauth/token (password grant)
+   * ------------------------------------------------------ */
   async getToken(
     clientId: string = HejhomeApiClient.CLIENT_ID,
     clientSecret: string = HejhomeApiClient.CLIENT_SECRET,
@@ -82,7 +82,7 @@ export class HejhomeApiClient {
   ): Promise<void> {
     const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
     const url = `${this.host}/oauth/token`;
-    this.log.info(`POST ${url}`);
+    this.log.debug(`POST ${url}`);
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -92,36 +92,52 @@ export class HejhomeApiClient {
       body: JSON.stringify({ username, password }),
     });
 
-    if (!res.ok) {
-      throw new Error(`Failed to get token: ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`Failed to get token: ${res.status}`);
 
-    const data = (await res.json()) as { access_token: string };
-    this.token = data.access_token;
+    const { access_token } = (await res.json()) as { access_token: string };
+    this.token = access_token;
   }
 
-  async getTokenFromSquare(log: Logger, email: string, password: string): Promise<void> {
-    const token = await obtainSquareToken(log, email, password);
+  /* --------------------------------------------------------
+   * 3) Square OAuth (권장: 2FA 계정도 지원)
+   * ------------------------------------------------------ */
+  async getTokenFromSquare(
+    email: string,
+    password: string,
+  ): Promise<void> {
+    const token = await obtainSquareToken(this.log, email, password);
     if (!token) {
-      throw new Error(`Failed to retrieve token from Hej Square.`);
+      throw new Error('Failed to retrieve token from Hej Square.');
     }
     this.token = token;
   }
 
+  /* --------------------------------------------------------
+   * 사용자 · 디바이스 API
+   * ------------------------------------------------------ */
   async getUser(): Promise<MemberList> {
     const res = await this.request('/openapi/user');
-    if (!res.ok) {
-      throw new Error(`Failed to fetch user: ${res.status}`);
-    }
-    return await res.json() as MemberList;
+    if (!res.ok) throw new Error(`Failed to fetch user: ${res.status}`);
+    return (await res.json()) as MemberList;
+  }
+
+  async getDevices(): Promise<HejhomeDevice[]> {
+    const res = await this.request('/openapi/devices');
+    if (!res.ok) throw new Error(`Failed to fetch devices: ${res.status}`);
+    return (await res.json()) as HejhomeDevice[];
+  }
+
+  async getIRDevices(): Promise<HejhomeDevice[]> {
+    const devices = await this.getDevices();
+    return devices.filter((d) =>
+      SUPPORTED_DEVICE_TYPES.includes(d.deviceType as (typeof SUPPORTED_DEVICE_TYPES)[number]),
+    );
   }
 
   async getDevicesState(): Promise<HejhomeDevice[]> {
     const res = await this.request('/openapi/devices/state');
-    if (!res.ok) {
-      throw new Error(`Failed to fetch devices state: ${res.status}`);
-    }
-    return await res.json() as HejhomeDevice[];
+    if (!res.ok) throw new Error(`Failed to fetch devices state: ${res.status}`);
+    return (await res.json()) as HejhomeDevice[];
   }
 
   async controlDevice(deviceId: string, body: { requirments: HejDeviceState }): Promise<void> {
@@ -129,37 +145,7 @@ export class HejhomeApiClient {
       method: 'POST',
       body: JSON.stringify(body),
     });
-    if (!res.ok) {
-      throw new Error(`Failed to control device: ${res.status}`);
-    }
-  }
-
-  private async request(path: string, options: RequestInit = {}): Promise<Response> {
-    const url = `${this.host}${path}`;
-    const method = options.method ?? 'GET';
-    this.log.info(`${method} ${url}`);
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.token}`,
-        ...options.headers,
-      },
-      ...options,
-    });
-    return response;
-  }
-
-  async getDevices(): Promise<HejhomeDevice[]> {
-    const res = await this.request('/openapi/devices');
-    if (!res.ok) {
-      throw new Error(`Failed to fetch devices: ${res.status}`);
-    }
-    return await res.json() as HejhomeDevice[];
-  }
-
-  async getIRDevices(): Promise<HejhomeDevice[]> {
-    const devices = await this.getDevices();
-    return devices.filter(d => SUPPORTED_DEVICE_TYPES.includes(d.deviceType as typeof SUPPORTED_DEVICE_TYPES[number]));
+    if (!res.ok) throw new Error(`Failed to control device: ${res.status}`);
   }
 
   async sendIRCommand(deviceId: string, command: string): Promise<void> {
@@ -167,8 +153,23 @@ export class HejhomeApiClient {
       method: 'POST',
       body: JSON.stringify({ command }),
     });
-    if (!res.ok) {
-      throw new Error(`Failed to send command: ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`Failed to send command: ${res.status}`);
+  }
+
+  /* --------------------------------------------------------
+   * 공통 요청 래퍼
+   * ------------------------------------------------------ */
+  private async request(path: string, opts: RequestInit = {}): Promise<Response> {
+    const url = `${this.host}${path}`;
+    const method = opts.method ?? 'GET';
+    this.log.debug(`${method} ${url}`);
+    return fetch(url, {
+      ...opts,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.token}`,
+        ...opts.headers,
+      },
+    });
   }
 }

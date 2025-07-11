@@ -52,8 +52,8 @@ export class HejhomeApiClient {
     private readonly log: Logger,
   ) {}
 
-  private static readonly CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7';
-  private static readonly CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12';
+  private static readonly CLIENT_ID = '62f4020744ca4510827d3b4a4d2c7e7f';
+  private static readonly CLIENT_SECRET = 'fcd4302cece447a9ab009296f649d2c0';
 
   async login(username: string, password: string): Promise<void> {
     const url = `${this.host}/openapi/login`;

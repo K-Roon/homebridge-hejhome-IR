@@ -20,29 +20,30 @@ export async function obtainSquareToken(
   email: string,
   password: string,
 ): Promise<string> {
-
-  const url  = 'https://goqual.io/oauth/login?vendor=openapi';
+  const url = 'https://goqual.io/oauth/login?vendor=openapi';
   const auth = 'Basic ' + Buffer.from(`${email}:${password}`).toString('base64');
 
-  const res  = await fetch(url, { method: 'POST', headers: { Authorization: auth } });
+  const res = await fetch(url, { method: 'POST', headers: { Authorization: auth } });
 
-  if (res.status === 204) {
-    throw new Error('204 No Content — ID/PW 또는 vendor 파라미터 확인');
+  /* ➊ 빈 바디·204·401 방어 */
+  if ([204, 401, 403].includes(res.status)) {
+    throw new Error(`Auth failed: HTTP ${res.status} — ID/PW 또는 vendor 파라미터 확인`);
   }
   const raw = await res.text();
   if (!raw) {
     throw new Error(`Empty body (status ${res.status}), cannot parse JSON`);
   }
 
+  /* ➋ JSON 파싱 안전 처리 */
   let data: any;
   try {
     data = JSON.parse(raw);
   } catch {
-    throw new Error(`Non-JSON response: ${raw.slice(0,120)}…`);
+    throw new Error(`Non-JSON response: ${raw.slice(0, 120)}…`);
   }
 
   if (!data.access_token) {
-    throw new Error(`Auth failed: ${JSON.stringify(data)}`);
+    throw new Error(`access_token missing: ${JSON.stringify(data)}`);
   }
   return data.access_token;
 }

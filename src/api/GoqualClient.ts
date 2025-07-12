@@ -1,5 +1,10 @@
 import type { Logger } from 'homebridge';
 import { obtainSquareToken } from './squareToken.js';
+import { Buffer } from 'node:buffer';
+
+const auth = Buffer
+  .from(`${username}:${password}`)
+  .toString('base64');
 
 export interface HejhomeDevice {
   id: string;
@@ -51,24 +56,28 @@ export class HejhomeApiClient {
   constructor(
     private readonly host: string,
     private readonly log: Logger,
-  ) {}
+  ) { }
 
   /* --------------------------------------------------------
    * 1) 레거시 /openapi/login (JWT 방식)
    * ------------------------------------------------------ */
   async login(username: string, password: string): Promise<void> {
-    const url = `${this.host}/openapi/login`;
+    const url = `${this.host}/oauth/login?vendor=openapi`;
+    const auth = 'Basic ' +
+      Buffer.from(`${username}:${password}`).toString('base64');
+
     this.log.debug(`POST ${url}`);
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json;charset=UTF-8' },
-      body: JSON.stringify({ username, password }),
+      headers: { Authorization: auth },   // ✅ Basic Auth
     });
 
-    if (!res.ok) throw new Error(`Failed to login: ${res.status}`);
+    if (!res.ok) {
+      throw new Error(`Failed to login: ${res.status} ${res.statusText}`);
+    }
 
-    const { token } = (await res.json()) as { token: string };
-    this.token = token;
+    const { access_token } = await res.json();
+    this.token = access_token;            // ✅ Homebridge 요청용 Bearer
   }
 
   /* --------------------------------------------------------

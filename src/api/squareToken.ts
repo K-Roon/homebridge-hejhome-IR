@@ -1,6 +1,12 @@
-/* Hej Square OAuth helper — patched 2025-07-11 */
 import { URL, URLSearchParams } from 'url';
 import type { Logger } from 'homebridge';
+import { HejhomeApiClient } from './GoqualClient.js';
+
+declare module './GoqualClient.js' {
+  interface HejhomeApiClient {
+    login(username: string, password: string): Promise<void>;
+  }
+}
 
 export interface SquareToken {
   access_token: string;
@@ -17,8 +23,8 @@ export async function obtainSquareToken(
   const makeAuth = (id: string, pw: string) =>
     'Basic ' + Buffer.from(`${id}:${pw}`).toString('base64');
 
-  const HEJ_CLIENT_ID = '62f4020744ca4510827d3b4a4d2c7e7f';
-  const HEJ_CLIENT_SECRET = 'fcd4302cece447a9ab009296f649d2c0';
+  const HEJ_CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7';
+  const HEJ_CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12';
 
   /* 1️⃣  Basic-Auth 로그인 → JSESSIONID */
   const loginRes = await fetch('https://square.hej.so/oauth/login?vendor=shop', {

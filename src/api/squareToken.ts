@@ -5,6 +5,7 @@ import { HejhomeApiClient } from './GoqualClient.js';
 
 declare module './GoqualClient.js' {
   interface HejhomeApiClient {
+    /** 간편 로그인(패스워드 그랜트) */
     login(username: string, password: string): Promise<void>;
   }
 }
@@ -15,40 +16,51 @@ export interface SquareToken {
   expires_in: number;
 }
 
+/* ------------------------------------------------------------------ */
+/* 1) Hejhome Open API(POST /oauth/login?vendor=openapi) — Basic Auth  */
+/* ------------------------------------------------------------------ */
 export async function obtainSquareToken(
   log: Logger,
   email: string,
   password: string,
 ): Promise<string> {
-  const url = 'https://goqual.io/oauth/login?vendor=openapi';
+  const url  = 'https://goqual.io/oauth/login?vendor=openapi';
   const auth = 'Basic ' + Buffer.from(`${email}:${password}`).toString('base64');
 
-  const res = await fetch(url, { method: 'POST', headers: { Authorization: auth } });
+  const res  = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: auth },
+  });
 
-  /* ➊ 빈 바디·204·401 방어 */
-  if ([204, 401, 403].includes(res.status)) {
-    throw new Error(`Auth failed: HTTP ${res.status} — ID/PW 또는 vendor 파라미터 확인`);
+  /* ➊ 401·403·204 → 자격 또는 파라미터 오류 */
+  if ([401, 403, 204].includes(res.status)) {
+    throw new Error(
+      `Auth failed: HTTP ${res.status} — 이메일·비밀번호·vendor=openapi 확인`,
+    );
   }
+
+  /* ➋ 빈 본문 방어 — 0 byte면 Undici JSON 파서가 즉시 예외를 던짐 */
   const raw = await res.text();
   if (!raw) {
     throw new Error(`Empty body (status ${res.status}), cannot parse JSON`);
   }
 
-  /* ➋ JSON 파싱 안전 처리 */
+  /* ➌ 안전 JSON 파싱 */
   let data: any;
   try {
     data = JSON.parse(raw);
   } catch {
     throw new Error(`Non-JSON response: ${raw.slice(0, 120)}…`);
   }
-
   if (!data.access_token) {
     throw new Error(`access_token missing: ${JSON.stringify(data)}`);
   }
   return data.access_token;
 }
 
-
+/* ------------------------------------------------------------------ */
+/* 2) Square OAuth 3-leg 플로우: login → code → token                 */
+/* ------------------------------------------------------------------ */
 export class SquareTokenService {
   private log: Logger;
   private clientId: string;
@@ -76,25 +88,28 @@ export class SquareTokenService {
     return this.exchangeCode(code, cookie);
   }
 
-  /* ---------- private ---------- */
+  /* --------------------------- private ---------------------------- */
   private async loginAndGetCookie(id: string, pw: string): Promise<string | null> {
-    /* ---------- 1) 쿠키 선취 ---------- */
+    /* 1) 쿠키·XSRF 선취 */
     const pre = await fetch(
-      `https://square.hej.so/oauth/authorize?client_id=${this.clientId}&response_type=code&redirect_uri=${encodeURIComponent(this.redirectUri)}`,
+      `https://square.hej.so/oauth/authorize?client_id=${this.clientId}&response_type=code&redirect_uri=${encodeURIComponent(
+        this.redirectUri,
+      )}`,
       { redirect: 'manual' },
     );
-
     if (![302, 303].includes(pre.status)) {
       this.log.warn(`Square authorize failed ${pre.status}`);
       return null;
     }
 
-    /* 쿠키·XSRF 추출 */
     const rawCookie = pre.headers.get('set-cookie') ?? '';
     const xsrf = /XSRF-TOKEN=([^;]+)/.exec(rawCookie)?.[1];
-    if (!xsrf) { this.log.warn('No XSRF token'); return null; }
+    if (!xsrf) {
+      this.log.warn('No XSRF token');
+      return null;
+    }
 
-    /* ---------- 2) 실제 로그인 ---------- */
+    /* 2) 실제 로그인 */
     const post = await fetch('https://square.hej.so/oauth/login', {
       method: 'POST',
       headers: {
@@ -106,13 +121,12 @@ export class SquareTokenService {
       body: new URLSearchParams({ loginId: id, password: pw }),
       redirect: 'manual',
     });
-
     if (![302, 303].includes(post.status)) {
       this.log.warn(`Square login failed ${post.status}`);
       return null;
     }
 
-    /* 쿠키 병합해 세션 반환 */
+    /* 세션 쿠키 병합 */
     return rawCookie + '; ' + (post.headers.get('set-cookie') ?? '');
   }
 
@@ -133,8 +147,8 @@ export class SquareTokenService {
       },
       redirect: 'manual',
     });
-
     if (![302, 303, 307].includes(res.status)) return null;
+
     const m = /[?&]code=([^&]+)/.exec(res.headers.get('location') ?? '');
     return m ? decodeURIComponent(m[1]) : null;
   }
@@ -158,10 +172,10 @@ export class SquareTokenService {
         redirect_uri: this.redirectUri,
       }),
     });
-
     return res.ok ? ((await res.json()) as SquareToken) : null;
   }
 
+  /* XSRF 값 추출 유틸 */
   private extractXsrf(cookie: string): string {
     return /XSRF-TOKEN=([^;]+)/.exec(cookie)?.[1] ?? '';
   }

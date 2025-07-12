@@ -282,7 +282,11 @@ export const startRealtime = async (platform: HejhomePlatform) => {
     password: HEJ_CLIENT_SECRET,
     useSSL: false,
     onSuccess: () => {
-      const email = platform.config.credentials?.email.replace(/\./gi, '-').replace(/%40/gi, '@');
+      const rawEmail =
+        platform.config.credentials?.email ?? platform.config.username;
+      const email = rawEmail
+        ?.replace(/\./gi, '-')
+        .replace(/%40/gi, '@');
       client.subscribe(`custom.${email}.*`, {
         qos: 1,
         timeout: 10,

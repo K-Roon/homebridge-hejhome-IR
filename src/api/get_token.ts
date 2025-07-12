@@ -95,7 +95,9 @@ const getTokenResponse = async (code: string): Promise<Response> => {
 export const getToken = async (
   platform: HejhomePlatform,
 ): Promise<string | undefined> => {
-  const { email, password } = platform.config.credentials || {};
+  const email = platform.config.credentials?.email ?? platform.config.username;
+  const password =
+    platform.config.credentials?.password ?? platform.config.password;
 
   if (!email || !password) {
     platform.log.error('Email and password are required');

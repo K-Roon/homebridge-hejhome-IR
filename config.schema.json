@@ -18,18 +18,25 @@
         "required": true,
         "default": "https://square.hej.so"
       },
-      "username": {
-        "title": "Hejhome 사용자 이름",
-        "type": "string",
-        "required": true
-      },
-      "password": {
-        "title": "Hejhome 비밀번호",
-        "type": "string",
+      "credentials": {
+        "title": "Hejhome 로그인 정보",
+        "type": "object",
         "required": true,
-        "format": "password",
-        "x-schema-form": {
-          "type": "password"
+        "properties": {
+          "email": {
+            "title": "Hejhome 이메일",
+            "type": "string",
+            "required": true
+          },
+          "password": {
+            "title": "Hejhome 비밀번호",
+            "type": "string",
+            "required": true,
+            "format": "password",
+            "x-schema-form": {
+              "type": "password"
+            }
+          }
         }
       },
       "deviceNames": {

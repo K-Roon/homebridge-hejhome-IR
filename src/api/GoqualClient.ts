@@ -1,10 +1,27 @@
 import type { Logger } from 'homebridge';
-import { obtainSquareToken } from './squareToken.js';
+//import { obtainSquareToken } from './squareToken.js';
 import { Buffer } from 'node:buffer';
 
-const auth = Buffer
-  .from(`${username}:${password}`)
-  .toString('base64');
+export async function obtainSquareToken(
+  log: Logger,
+  email: string,
+  password: string,
+): Promise<string | null> {
+  const auth = 'Basic ' + Buffer
+     .from(`${email}:${password}`)
+     .toString('base64');
+
+  const url = 'https://goqual.io/oauth/login?vendor=openapi';
+
+  const res = await fetch(url, {               // JSON body ❌
+    method: 'POST',
+    headers: { Authorization: auth },          // ✅ Basic Auth
+  });
+
+  if (!res.ok) throw new Error(`Login failed: ${res.status}`);
+  const { access_token } = await res.json();
+  return access_token;
+}
 
 export interface HejhomeDevice {
   id: string;

@@ -3,12 +3,12 @@ import { PlatformConfig } from 'homebridge';
 /**
  * This is the name of the platform that users will use to register the plugin in the Homebridge config.json
  */
-export const PLATFORM_NAME = 'Hejhome';
+export const PLATFORM_NAME = 'HejhomeIR';
 
 /**
  * This must match the name of your plugin as defined the package.json
  */
-export const PLUGIN_NAME = '@chazepps/homebridge-hejhome';
+export const PLUGIN_NAME = '@k-roon/homebridge-hejhome-ir';
 
 // Config
 export interface HejhomePlatformConfig extends PlatformConfig {

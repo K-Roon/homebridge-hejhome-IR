@@ -36,7 +36,6 @@ export async function obtainSquareToken(
   if (!loginRes.ok) throw new Error(`Login failed: ${loginRes.status}`);
   const cookie = loginRes.headers.get('set-cookie'); // JSESSIONID=…
 
-  // ✅ [수정됨] 쿠키가 null일 경우를 대비한 에러 처리
   if (!cookie) {
     throw new Error('Failed to get session cookie from login response.');
   }
@@ -49,9 +48,17 @@ export async function obtainSquareToken(
     redirect: 'manual',
     headers: { Cookie: cookie, Authorization: basicAuth(email, password) },
   });
+  
   const loc = authRes.headers.get('location');
-  const code = new URL(loc!).searchParams.get('code');
-  if (!code) throw new Error('Authorization code missing');
+
+  // ✅ [수정됨] location 헤더가 null일 경우를 대비한 에러 처리
+  if (!loc) {
+    log.error(`Authorization redirect failed. Status: ${authRes.status}. Did not receive a location header. Check your credentials.`);
+    throw new Error('Authorization failed: Redirect location header not found.');
+  }
+  
+  const code = new URL(loc).searchParams.get('code');
+  if (!code) throw new Error('Authorization code missing in redirect URL');
 
   // ③ 토큰 교환
   const tokenURL =
@@ -143,7 +150,7 @@ export class SquareTokenService {
   }
 
   private async getCode(cookie: string): Promise<string | null> {
-    const url = new URL('https://square.hej.so/oauth/authorize');
+    const url = new URL('https.square.hej.so/oauth/authorize');
     url.search = new URLSearchParams({
       client_id: this.clientId,
       response_type: 'code',
@@ -169,7 +176,7 @@ export class SquareTokenService {
     code: string,
     cookie: string,
   ): Promise<SquareToken | null> {
-    const res = await fetch('https://square.hej.so/oauth/token', {
+    const res = await fetch('https.square.hej.so/oauth/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',

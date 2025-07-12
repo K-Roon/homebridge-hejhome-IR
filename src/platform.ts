@@ -1,7 +1,7 @@
 import { API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAccessory, Service } from 'homebridge';
 
-import { Base, LedStripRgbw2, LightRgbw5, RelayController, SensorMo, SmartButton, ZigbeeSwitch1, ZigbeeSwitch2 } from './accessories/index.js';
-import { getToken, hejAccessories, HejDevice, hejDevices, hejEvent, startRealtime } from './requests/index.js';
+import { Base, IrAirconditionerAccessory, IrFanAccessory, IrLampAccessory, IrStatelessSwitchAccessory, IrTvAccessory } from './accessories/index.js';
+import { getToken, hejAccessories, HejDevice, hejDevices, hejEvent, startRealtime } from './api/index.js';
 import { HejhomePlatformConfig, PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 
 export class HejhomePlatform implements DynamicPlatformPlugin {
@@ -128,26 +128,18 @@ export class HejhomePlatform implements DynamicPlatformPlugin {
   ) {
     let hejAccessory: Base | null = null;
     switch (device.deviceType) {
-      case 'ZigbeeSwitch1':
-        hejAccessory = new ZigbeeSwitch1(platform, accessory, device);
+      case 'IrAirconditioner':
+      case 'IrAirpurifier':
+        hejAccessory = new IrStatelessSwitchAccessory(platform, accessory, device, 'power');
         break;
-      case 'ZigbeeSwitch2':
-        hejAccessory = new ZigbeeSwitch2(platform, accessory, device);
+      case 'IrFan':
+        hejAccessory = new IrFanAccessory(platform, accessory, device);
         break;
-      case 'LightRgbw5':
-        hejAccessory = new LightRgbw5(platform, accessory, device);
+      case 'IrLamp':
+        hejAccessory = new IrLampAccessory(platform, accessory, device);
         break;
-      case 'LedStripRgbw2':
-        hejAccessory = new LedStripRgbw2(platform, accessory, device);
-        break;
-      case 'SensorMo':
-        hejAccessory = new SensorMo(platform, accessory, device);
-        break;
-      case 'SmartButton':
-        hejAccessory = new SmartButton(platform, accessory, device);
-        break;
-      case 'RelayController':
-        hejAccessory = new RelayController(platform, accessory, device);
+      case 'IrTv':
+        hejAccessory = new IrTvAccessory(platform, accessory, device);
         break;
     }
 

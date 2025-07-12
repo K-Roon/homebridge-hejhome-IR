@@ -1,17 +1,16 @@
 import { CharacteristicValue } from 'homebridge';
 import { IrBaseAccessory } from './IrBaseAccessory.js';
-import { HejhomeIRPlatform } from '../platform.js';
-import { HejhomeDevice, HejhomeApiClient } from '../api/GoqualClient.js';
+import { HejhomePlatform } from '../platform.js';
+import { HejDevice } from '../api/get_devices.js';
 import type { PlatformAccessory } from 'homebridge';
 
 export class IrAirconditionerAccessory extends IrBaseAccessory {
   constructor(
-    platform: HejhomeIRPlatform,
+    platform: HejhomePlatform,
     accessory: PlatformAccessory,
-    device: HejhomeDevice,
-    api: HejhomeApiClient,
+    device: HejDevice,
   ) {
-    super(platform, accessory, device, api, 'HeaterCooler');
+    super(platform, accessory, device, 'HeaterCooler');
 
     const { Characteristic } = this.platform.api.hap;
 
@@ -30,10 +29,10 @@ export class IrAirconditionerAccessory extends IrBaseAccessory {
 
   private async setActive(value: CharacteristicValue): Promise<void> {
     this.accessory.context.active = value;
-    await this.fire('power');
+    await this.sendCommand('power');
   }
 
   private async setTargetTemp(value: CharacteristicValue): Promise<void> {
-    await this.fire(`temperature:${Number(value)}`);
+    await this.sendCommand(`temperature:${Number(value)}`);
   }
 }

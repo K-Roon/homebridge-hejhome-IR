@@ -32,16 +32,11 @@ export interface HejDevice {
   id: string;
   name: string;
   deviceType:
-  | 'LightRgbw5'
-  | 'ZigbeeSwitch1'
-  | 'ZigbeeSwitch2'
+  | 'IrAirconditioner'
+  | 'IrLamp'
   | 'IrFan'
-  | 'IrTv'
-  | 'SensorMo'
-  | 'LedStripRgbw2'
-  | 'SmartButton'
-  | 'SensorTh'
-  | 'RelayController';
+  | 'IrAirpurifier'
+  | 'IrTv';
   hasSubDevices: boolean;
   modelName: string | null;
   familyId: number;

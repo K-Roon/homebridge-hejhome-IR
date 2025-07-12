@@ -1,5 +1,6 @@
 import { URL, URLSearchParams } from 'url';
 import type { Logger } from 'homebridge';
+import { Buffer } from 'node:buffer';
 import { HejhomeApiClient } from './GoqualClient.js';
 
 declare module './GoqualClient.js' {
@@ -20,56 +21,30 @@ export async function obtainSquareToken(
   email: string,
   password: string,
 ): Promise<string | null> {
-  const makeAuth = (id: string, pw: string) =>
-    'Basic ' + Buffer.from(`${id}:${pw}`).toString('base64');
+  const url = 'https://goqual.io/oauth/login?vendor=openapi';
+  const auth = 'Basic ' + Buffer.from(`${email}:${password}`).toString('base64');
 
-  const HEJ_CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7';
-  const HEJ_CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12';
+  const res = await fetch(url, { method: 'POST', headers: { Authorization: auth } });
 
-  /* 1️⃣  Basic-Auth 로그인 → JSESSIONID */
-  const loginRes = await fetch('https://square.hej.so/oauth/login?vendor=shop', {
-    method: 'POST',
-    headers: { authorization: makeAuth(email, password) },
-    redirect: 'manual',
-  });
-  const setCookie = loginRes.headers.get('set-cookie') ?? '';
-  const jsession = /JSESSIONID=([^;]+)/.exec(setCookie)?.[1];
-  if (!jsession) { log.error('JSESSIONID 얻기 실패'); return null; }
+  if (res.status === 204) {
+    throw new Error('No content — check ID/PW or vendor param');
+  }
+  const raw = await res.text();
+  if (!raw) {
+    throw new Error(`Empty body from auth server (status ${res.status})`);
+  }
 
-  /* 2️⃣  GET /oauth/authorize → code */
-  const username = encodeURIComponent(email);
-  const cookie = `username=${username}; JSESSIONID=${jsession}`;
-  const authURL =
-    `https://square.hej.so/oauth/authorize?client_id=${HEJ_CLIENT_ID}` +
-    `&redirect_uri=https%3A%2F%2Fsquare.hej.so%2Flist&response_type=code&scope=shop`;
+  let data: any;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    throw new Error(`Non-JSON response: ${raw.slice(0,120)}…`);
+  }
 
-  const authRes = await fetch(authURL, {
-    method: 'GET',
-    headers: { cookie },
-    redirect: 'manual',
-  });
-  const location = authRes.headers.get('location') ?? '';
-  const codeMatch = /code=([^&]+)/.exec(location);
-  if (!codeMatch) { log.error('authorization code 획득 실패'); return null; }
-  const code = codeMatch[1];
-
-  /* 3️⃣  POST /oauth/token → access_token */
-  const tokenRes = await fetch('https://square.hej.so/oauth/token', {
-    method: 'POST',
-    headers: {
-      authorization: makeAuth(HEJ_CLIENT_ID, HEJ_CLIENT_SECRET),
-      'content-type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      client_id: HEJ_CLIENT_ID,
-      redirect_uri: 'https://square.hej.so/list',
-    }),
-  });
-  if (!tokenRes.ok) { log.error(`token 교환 실패 ${tokenRes.status}`); return null; }
-  const { access_token } = await tokenRes.json() as { access_token: string };
-  return access_token;
+  if (!data.access_token) {
+    throw new Error(`Auth failed: ${JSON.stringify(data)}`);
+  }
+  return data.access_token;
 }
 
 

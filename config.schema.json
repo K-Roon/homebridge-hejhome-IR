@@ -16,7 +16,7 @@
         "title": "Hejhome API 호스트",
         "type": "string",
         "required": true,
-        "default": "https://square.hej.so/"
+        "default": "https://square.hej.so"
       },
       "username": {
         "title": "Hejhome 사용자 이름",

@@ -1,27 +1,26 @@
 import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { IrBaseAccessory } from './IrBaseAccessory.js';
-import { HejhomeIRPlatform } from '../platform.js';
-import { HejhomeDevice, HejhomeApiClient } from '../api/GoqualClient.js';
+import { HejhomePlatform } from '../platform.js';
+import { HejDevice } from '../api/get_devices.js';
 
 export class IrStatelessSwitchAccessory extends IrBaseAccessory {
   constructor(
-    platform: HejhomeIRPlatform,
+    platform: HejhomePlatform,
     accessory: PlatformAccessory,
-    device: HejhomeDevice,
-    api: HejhomeApiClient,
+    device: HejDevice,
     private readonly irCommand: string,
   ) {
-    super(platform, accessory, device, api, 'Switch');
+    super(platform, accessory, device, 'Switch');
     const { Characteristic } = this.platform.api.hap;
 
     this.service.getCharacteristic(Characteristic.On)
-      .onSet(this.pushButton.bind(this))
+      .onSet(this.activateSwitch.bind(this))
       .onGet(() => false);           // 항상 OFF 표시
   }
 
-  private async pushButton(value: CharacteristicValue): Promise<void> {
+  private async activateSwitch(value: CharacteristicValue): Promise<void> {
     if (value as boolean) {
-      await this.fire(this.irCommand);
+      await this.sendCommand(this.irCommand);
       setTimeout(() => {
         // 0.5초 뒤 상태를 OFF 로 되돌려 “버튼” 동작
         this.service.updateCharacteristic(

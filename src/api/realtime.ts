@@ -6,8 +6,6 @@ import mqtt from 'paho-mqtt';
 import ws from 'ws';
 
 import { Base } from '../accessories/base.js';
-import { EVENT_MOTION_DETECTED } from '../accessories/sensor_mo.js';
-import { EVENT_BUTTON_PRESSED } from '../accessories/smart_button.js';
 import { HejhomePlatform } from '../platform.js';
 import { getDevices } from './get_devices.js';
 import { getFamilies } from './get_family.js';
@@ -26,16 +24,11 @@ type HejDevice = {
   roomId?: number;
   name: string;
   deviceType:
-  | 'LightRgbw5'
-  | 'ZigbeeSwitch1'
-  | 'ZigbeeSwitch2'
+  | 'IrAirconditioner'
+  | 'IrLamp'
   | 'IrFan'
-  | 'IrTv'
-  | 'SensorMo'
-  | 'LedStripRgbw2'
-  | 'SmartButton'
-  | 'SensorTh'
-  | 'RelayController';
+  | 'IrAirpurifier'
+  | 'IrTv';
   hasSubDevices: boolean;
   modelName: string | null;
   familyId: number;
@@ -251,9 +244,6 @@ export const startRealtime = async (platform: HejhomePlatform) => {
               });
               break;
             }
-            case 'pir':
-              hejEvent.emit(EVENT_MOTION_DETECTED, devId, status.value);
-              break;
             case 'bright_value':
               set(deviceOverrides, `${devId}.deviceState.brightness`, status.value / 256 * 100);
               break;
@@ -263,14 +253,6 @@ export const startRealtime = async (platform: HejhomePlatform) => {
             case 'switch_2':
               set(deviceOverrides, `${devId}.deviceState.power2`, status.value);
               break;
-            case 'switch1_value':
-            case 'switch2_value':
-            case 'switch3_value':
-            case 'switch4_value': {
-              const idx = Number(status.code.replace('switch', '').replace('_value', '')) - 1;
-              hejEvent.emit(EVENT_BUTTON_PRESSED, devId, idx, status.value);
-              break;
-            }
             default:
               platform.log.info('unknown status code', status);
               break;

@@ -3,6 +3,9 @@ import type { Logger } from 'homebridge';
 import { Buffer } from 'node:buffer';
 import { HejhomeApiClient } from './GoqualClient.js';
 
+const CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7';
+const CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12';
+
 declare module './GoqualClient.js' {
   interface HejhomeApiClient {
     /** 간편 로그인(패스워드 그랜트) */
@@ -20,36 +23,52 @@ export interface SquareToken {
 /* 1) Hejhome Open API(POST /oauth/login?vendor=openapi) — Basic Auth  */
 /* ------------------------------------------------------------------ */
 export async function obtainSquareToken(
-  log: Logger, email: string, password: string,
-): Promise<string> {
+  log: Logger,
+  email: string,
+  password: string,
+): Promise<string | null> {
+  
+  // ① 세션 쿠키 얻기
+  const loginRes = await fetch(
+    'https://goqual.io/oauth/login?vendor=openapi',
+    { method: 'POST', headers: { Authorization: basicAuth(email, password) } }
+  );
+  if (!loginRes.ok) throw new Error(`Login failed: ${loginRes.status}`);
+  const cookie = loginRes.headers.get('set-cookie'); // JSESSIONID=…
 
-  const url  = 'https://goqual.io/oauth/login?vendor=openapi';
-  const auth = 'Basic ' + Buffer.from(`${email}:${password}`).toString('base64');
-
-  const res  = await fetch(url, { method: 'POST', headers: { Authorization: auth } });
-
-  /* 1️⃣ HTTP 상태 검사 */
-  if ([401, 403, 204].includes(res.status)) {
-    throw new Error(`Auth failed (HTTP ${res.status}) – 아이디·비번·vendor 파라미터 확인`);
+  // ✅ [수정됨] 쿠키가 null일 경우를 대비한 에러 처리
+  if (!cookie) {
+    throw new Error('Failed to get session cookie from login response.');
   }
 
-  /* 2️⃣ 빈 바디 방어 */
-  const raw = await res.text();
-  if (!raw) throw new Error(`Empty body (status ${res.status}), cannot parse JSON`);
+  // ② 인가 코드 얻기 (리다이렉트 수동 처리)
+  const authURL =
+    'https://goqual.io/oauth/authorize' +
+    `?response_type=code&client_id=${CLIENT_ID}&scope=all&redirect_uri=oob`;
+  const authRes = await fetch(authURL, {
+    redirect: 'manual',
+    headers: { Cookie: cookie, Authorization: basicAuth(email, password) },
+  });
+  const loc = authRes.headers.get('location');
+  const code = new URL(loc!).searchParams.get('code');
+  if (!code) throw new Error('Authorization code missing');
 
-  /* 3️⃣ JSON 파싱 */
-  let data: any;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    throw new Error(`Non-JSON response: ${raw.slice(0,120)}…`);
-  }
-
-  if (!data.access_token) {
-    throw new Error(`access_token missing: ${JSON.stringify(data)}`);
-  }
-  return data.access_token;
+  // ③ 토큰 교환
+  const tokenURL =
+    `https://goqual.io/oauth/token?grant_type=authorization_code&code=${code}&redirect_uri=oob`;
+  const tokenRes = await fetch(tokenURL, {
+    method: 'POST',
+    headers: {
+      Authorization: basicAuth(CLIENT_ID, CLIENT_SECRET),
+    },
+  });
+  if (!tokenRes.ok) throw new Error(`Token exchange failed: ${tokenRes.status}`);
+  const { access_token } = await tokenRes.json();
+  return access_token;
 }
+
+const basicAuth = (id: string, pw: string) =>
+  'Basic ' + Buffer.from(`${id}:${pw}`).toString('base64');
 
 /* ------------------------------------------------------------------ */
 /* 2) Square OAuth 3-leg 플로우: login → code → token                 */

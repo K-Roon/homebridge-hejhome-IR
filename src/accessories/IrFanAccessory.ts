@@ -1,16 +1,15 @@
 import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { IrBaseAccessory } from './IrBaseAccessory.js';
-import { HejhomeIRPlatform } from '../platform.js';
-import { HejhomeDevice, HejhomeApiClient } from '../api/GoqualClient.js';
+import { HejhomePlatform } from '../platform.js';
+import { HejDevice } from '../api/get_devices.js';
 
 export class IrFanAccessory extends IrBaseAccessory {
   constructor(
-    platform: HejhomeIRPlatform,
+    platform: HejhomePlatform,
     accessory: PlatformAccessory,
-    device: HejhomeDevice,
-    api: HejhomeApiClient,
+    device: HejDevice,
   ) {
-    super(platform, accessory, device, api, 'Fan');
+    super(platform, accessory, device, 'Fan');
 
     const { Characteristic } = this.platform.api.hap;
 
@@ -27,24 +26,24 @@ export class IrFanAccessory extends IrBaseAccessory {
 
     // 회전 (SwingMode)
     this.service.getCharacteristic(Characteristic.SwingMode)
-      .onSet((v: CharacteristicValue) => this.fire(v ? 'oscillate' : 'oscillate')) // 토글형 버튼
+      .onSet((v: CharacteristicValue) => this.sendCommand(v ? 'oscillate' : 'oscillate')) // 토글형 버튼
       .onGet(() => 0);
   }
 
   private async handlePower(value: number) {
-    await this.fire('power');              // 켬/끔 토글
+    await this.sendCommand('power');              // 켬/끔 토글
     this.reset(this.platform.api.hap.Characteristic.Active);
   }
 
   private async handleSpeed(percent: number) {
     if (percent === 0) {                   // 슬라이더 맨 아래 → 전원 토글
-      await this.fire('power');
+      await this.sendCommand('power');
     } else if (percent <= 33) {
-      await this.fire('speedLow');
+      await this.sendCommand('speedLow');
     } else if (percent <= 66) {
-      await this.fire('speedMed');
+      await this.sendCommand('speedMed');
     } else {
-      await this.fire('speedHigh');
+      await this.sendCommand('speedHigh');
     }
     this.reset(this.platform.api.hap.Characteristic.RotationSpeed);
   }

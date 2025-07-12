@@ -1,21 +1,20 @@
 import { CharacteristicValue, PlatformAccessory } from 'homebridge';
 import { IrBaseAccessory } from './IrBaseAccessory.js';
-import { HejhomeIRPlatform } from '../platform.js';
-import { HejhomeDevice, HejhomeApiClient } from '../api/GoqualClient.js';
+import { HejhomePlatform } from '../platform.js';
+import { HejDevice } from '../api/get_devices.js';
 
 export class IrTvAccessory extends IrBaseAccessory {
   constructor(
-    platform: HejhomeIRPlatform,
+    platform: HejhomePlatform,
     accessory: PlatformAccessory,
-    device: HejhomeDevice,
-    api: HejhomeApiClient,
+    device: HejDevice,
   ) {
-    super(platform, accessory, device, api, 'Television');
+    super(platform, accessory, device, 'Television');
 
     const { Characteristic } = this.platform.api.hap;
 
     this.service.getCharacteristic(Characteristic.Active)
-      .onSet(() => this.fire('power'))
+      .onSet(() => this.sendCommand('power'))
       .onGet(() => 0);
 
     // HDMI 1 입력 전환 버튼 (별도 Switch)
@@ -25,7 +24,7 @@ export class IrTvAccessory extends IrBaseAccessory {
     hdmi1.getCharacteristic(Characteristic.On)
       .onSet(async (v: CharacteristicValue) => {
         if (v) {
-          await this.fire('hdmi1');
+          await this.sendCommand('hdmi1');
           setTimeout(() => hdmi1.updateCharacteristic(Characteristic.On, false), 500);
         }
       })

@@ -15,23 +15,23 @@ export interface SquareToken {
   expires_in: number;
 }
 
-
 export async function obtainSquareToken(
   log: Logger,
   email: string,
   password: string,
-): Promise<string | null> {
-  const url = 'https://goqual.io/oauth/login?vendor=openapi';
+): Promise<string> {
+
+  const url  = 'https://goqual.io/oauth/login?vendor=openapi';
   const auth = 'Basic ' + Buffer.from(`${email}:${password}`).toString('base64');
 
-  const res = await fetch(url, { method: 'POST', headers: { Authorization: auth } });
+  const res  = await fetch(url, { method: 'POST', headers: { Authorization: auth } });
 
   if (res.status === 204) {
-    throw new Error('No content — check ID/PW or vendor param');
+    throw new Error('204 No Content — ID/PW 또는 vendor 파라미터 확인');
   }
   const raw = await res.text();
   if (!raw) {
-    throw new Error(`Empty body from auth server (status ${res.status})`);
+    throw new Error(`Empty body (status ${res.status}), cannot parse JSON`);
   }
 
   let data: any;

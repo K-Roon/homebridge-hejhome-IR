@@ -20,38 +20,31 @@ export interface SquareToken {
 /* 1) Hejhome Open API(POST /oauth/login?vendor=openapi) — Basic Auth  */
 /* ------------------------------------------------------------------ */
 export async function obtainSquareToken(
-  log: Logger,
-  email: string,
-  password: string,
+  log: Logger, email: string, password: string,
 ): Promise<string> {
+
   const url  = 'https://goqual.io/oauth/login?vendor=openapi';
   const auth = 'Basic ' + Buffer.from(`${email}:${password}`).toString('base64');
 
-  const res  = await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: auth },
-  });
+  const res  = await fetch(url, { method: 'POST', headers: { Authorization: auth } });
 
-  /* ➊ 401·403·204 → 자격 또는 파라미터 오류 */
+  /* 1️⃣ HTTP 상태 검사 */
   if ([401, 403, 204].includes(res.status)) {
-    throw new Error(
-      `Auth failed: HTTP ${res.status} — 이메일·비밀번호·vendor=openapi 확인`,
-    );
+    throw new Error(`Auth failed (HTTP ${res.status}) – 아이디·비번·vendor 파라미터 확인`);
   }
 
-  /* ➋ 빈 본문 방어 — 0 byte면 Undici JSON 파서가 즉시 예외를 던짐 */
+  /* 2️⃣ 빈 바디 방어 */
   const raw = await res.text();
-  if (!raw) {
-    throw new Error(`Empty body (status ${res.status}), cannot parse JSON`);
-  }
+  if (!raw) throw new Error(`Empty body (status ${res.status}), cannot parse JSON`);
 
-  /* ➌ 안전 JSON 파싱 */
+  /* 3️⃣ JSON 파싱 */
   let data: any;
   try {
     data = JSON.parse(raw);
   } catch {
-    throw new Error(`Non-JSON response: ${raw.slice(0, 120)}…`);
+    throw new Error(`Non-JSON response: ${raw.slice(0,120)}…`);
   }
+
   if (!data.access_token) {
     throw new Error(`access_token missing: ${JSON.stringify(data)}`);
   }

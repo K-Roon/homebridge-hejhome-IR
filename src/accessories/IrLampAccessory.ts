@@ -23,7 +23,7 @@ export class IrLampAccessory extends IrBaseAccessory {
       .onGet(() => 0);
   }
 
-  private async setPowerState(on: CharacteristicValue) {
-    await this.sendCommand(on ? 'on' : 'off');
+  private async setPowerState(power: CharacteristicValue) {
+    await this.sendCommand("power", power ? 'true' : 'false');
   }
 }

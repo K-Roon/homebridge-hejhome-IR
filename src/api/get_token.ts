@@ -3,8 +3,8 @@ import validator from 'validator';
 
 import { HejhomePlatform } from '../platform.js';
 
-export const HEJ_CLIENT_ID = 'e08a10573e37452daf2b948b390d5ef7';
-export const HEJ_CLIENT_SECRET = '097a8d169af04e48a33abb33b8788f12';
+export const HEJ_CLIENT_ID = '62f4020744ca4510827d3b4a4d2c7e7f';
+export const HEJ_CLIENT_SECRET = 'fcd4302cece447a9ab009296f649d2c0';
 
 /**
  * Generates a Basic Auth string from the provided credentials.

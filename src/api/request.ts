@@ -1,30 +1,29 @@
 import ky from 'ky';
 import { HejhomePlatform } from '../platform.js';
 
-// src/api/request.ts
-const BASE = 'https://goqual.io/openapi/';          // ✅ 도메인·루트 교체
-
-export const hejRequest = async <Req = unknown, Res = unknown>(
+export const hejRequest = async <
+  Req = unknown,
+  Res = unknown
+>(
   platform: HejhomePlatform,
   method: 'GET' | 'POST',
   path: string,
   data?: Req,
   expectJson = true,
 ) => {
-  const url = `${BASE}${path}`;                     // ✅ dashboard → openapi
+  const url = `https://square.hej.so/${path}`;
 
   const response = await ky(url, {
     method,
     headers: {
-      Authorization: `Bearer ${platform.token}`,
-      'Content-Type': 'application/json;charset=UTF-8',
+      authorization: `Bearer ${platform.token}`,
       'x-requested-with': 'XMLHttpRequest',
-      Referer: 'https://square.hej.so/square',       // 그대로 두어도 무방
+      Referer: 'https://square.hej.so/square',
     },
+    /* ky는 옵션 이름이 json → json, body → rawBody */
     ...(data !== undefined && { json: data }),
-    timeout: 10_000,
   });
 
-  const txt = await response.text();
-  return expectJson ? (JSON.parse(txt || '[]') as Res) : (txt as Res);
+  const text = await response.text();
+  return expectJson ? (JSON.parse(text || '[]') as Res) : (text as unknown as Res);
 };

@@ -12,7 +12,7 @@
 
 * **OAuth 2.0**(Hej Square) 기반 원클릭 로그인 및 자동 토큰 갱신
 * Web UI에서 **ID / PW 입력**만으로 간단 설정
-~~* `deviceNames` 배열로 **원하는 IR 기기만** HomeKit에 노출~~ (해당 사항은 추후 진행 예정)
+* ~~`deviceNames` 배열로 **원하는 IR 기기만** HomeKit에 노출~~ (해당 사항은 추후 진행 예정)
 * 한국어, 영어 UI 지원 & TypeScript 기반 안정적 코드베이스
 
 ---
@@ -101,4 +101,4 @@ homebridge
 ```
 Apache-2.0 License © 2025 K‑Roon
 ```
->>API 접근방식 등 일부 코드는 [homebridge-hejhome](https://github.com/chazepps/homebridge-hejhome) 프로젝트를 참고했습니다.
+> API 접근방식 등 일부 코드는 [homebridge-hejhome](https://github.com/chazepps/homebridge-hejhome) 프로젝트를 참고했습니다.
